@@ -1,0 +1,17 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap');
+body{
+    font-family: "Allerta Stencil", sans-serif;
+} */
+
+/* body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+} */
+
+body{
+    background: url("../src/assets/images/inspiration-geometry.png");
+
+}

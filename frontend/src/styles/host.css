@@ -1,0 +1,118 @@
+.host-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 50px; /* Adjust margin as needed */
+    
+}
+.option-container{
+  position: absolute;
+  top: 50%;
+  left:78%
+}
+.host-container p {
+  text-align: center;
+  background-color: #007bff; /* Background color */
+  color: #ffffff; /* Text color */
+  border-radius: 20%; /* Adjust the border-radius to control the roundness */
+  padding: 20px
+}
+.host-container p:hover {
+  background-color: black;
+  color: white;
+}
+
+
+
+/* .host-host-table {
+    margin: auto;
+    border-collapse: collapse;
+} */
+
+.host-cell {
+    padding: 8px; /* Adjust padding for spacing */
+    border: 1px solid #ccc; /* Add border for cell */
+    text-align: center;
+}
+
+
+.host-host-table td,
+.host-host-table th {
+  border: 1px solid black; /* Add borders to cells */
+  padding: 10px; /* Add padding to cells */
+}
+
+.strikethrough {
+    text-decoration: line-through;
+    background-color: khaki;
+  }
+  
+
+    
+  .host-table {
+    margin-top: 20px;
+    border-radius: 15px;
+    overflow: hidden;
+    background-color:white;
+  }
+  
+  .host-table table {
+    border-collapse: separate;
+    border-spacing: 5px; 
+    width: 100%;
+  }
+  
+  .host-table td {
+    padding: 20px;
+    border: 1px solid #ccc;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: background-color 0.4s ease; 
+
+  }
+  .host-table td.clicked {
+    background-color: rgba(223, 223, 223, 0.692);
+  }
+  .host-table td:hover {
+      cursor: pointer;
+
+  }
+  
+  .host-table th {
+    background-color: #f2f2f2;
+    padding: 15px;
+    border: 2px solid #ccc;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .users-list{
+    position:absolute;
+    top:40%;
+    left:5%
+  }
+
+
+
+
+  .host-claim{
+    width: 20%;
+    position: absolute;
+    top:40%;
+    left:75%;
+    border-radius: 20px;
+    padding: 50px ;
+    background-color: rgba(128, 128, 128, 0.247);
+  }
+  
+
+  
+
+  
+  
+  
+  
