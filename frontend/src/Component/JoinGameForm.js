@@ -34,14 +34,21 @@ const JoinGameForm = ({ socket }) => {
       const response = await axios.get(
         `http://${API_URL}:3309/verify?joiningCode=${joiningCode}`
       );
+      setWaitingMessageVisible(true);
 
+
+      const data ={
+        name : name,
+        joiningcode : joiningCode,
+        socketId : socket.id
+      }
+
+      await axios.post(`http://${API_URL}:3309/addUser`,data);
       if (response.status === 200) {
         if (joiningCode.trim() && name.trim()) {
-          // if verification got success we are sending the joining code and the name entered to server.js
           socket.emit("dataEntered", { joiningCode, name });
         }
 
-        setWaitingMessageVisible(true);
         setError(null);
         setIsLoading(true);
       } else {
@@ -52,13 +59,18 @@ const JoinGameForm = ({ socket }) => {
       setWaitingMessageVisible(false);
       setError("Invalid joining code. Please try again With Valid Code.");
     }
+
+    
   };
 
   useEffect(() => {
     // simply redirect all the users to this path
     const handleGameStarted = () => {
-      navigate("/play-game");
+      if (waitingMessageVisible) {
+        navigate("/play-game");
+      }
     };
+    
 
     // listening from server.js / the name and socket id get as array from game creation page
     socket.on("joinUserName", (userData) => {
@@ -72,7 +84,7 @@ const JoinGameForm = ({ socket }) => {
         socket.off("gameStarted", handleGameStarted);
       };
     }
-  }, [socket, navigate]);
+  }, [socket, navigate,waitingMessageVisible]);
 
   return (
     <div className="center-join">
@@ -93,13 +105,14 @@ const JoinGameForm = ({ socket }) => {
                     name="joiningCode"
                     value={joiningCode}
                     disabled={isLoading}
+                    placeholder="Joining Code"
                     onChange={(e) => setJoiningCode(e.target.value)}
                     required
                   />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="name" className="form-label">
-                    Enter Player Name:
+                    Enter Your Name:
                   </label>
                   <input
                     type="text"
@@ -109,6 +122,7 @@ const JoinGameForm = ({ socket }) => {
                     name="name"
                     value={name}
                     required
+                    placeholder="Name"
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>

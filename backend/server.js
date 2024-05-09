@@ -1,22 +1,19 @@
-const express = require("express")
+const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const cors = require("cors");
-const bodyParser = require('body-parser');
+const bodyParser = require("body-parser");
 const app = express();
 const httpServer = http.createServer(app);
 
-
 // app.js
-const { generateJoiningCode, generateUniqueLink } = require('./utils');
+const { generateJoiningCode, generateUniqueLink } = require("./utils");
 const { API_URL, SOCKET_IO_CORS_ORIGIN } = require("./constant");
-
-
 
 // Socket Cors Connection
 const io = socketIO(httpServer, {
   cors: {
-    origin:SOCKET_IO_CORS_ORIGIN,
+    origin: SOCKET_IO_CORS_ORIGIN,
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true,
@@ -33,47 +30,45 @@ app.use(express.urlencoded({ extended: true }));
 const router = require("./routers/userRoutes");
 app.use("/", router);
 
-app.get("/",(req,res)=>{
-    res.send("<h1>Hi</h1>")
+app.get("/", (req, res) => {
+  res.send("<h1>Hi</h1>");
 });
 
-// 
+//
 
 let liveUsers = [];
 let hostSocketId = null;
 let isHostAssigned = false;
 
-let generatedNumbers = [];  
+let generatedNumbers = [];
 let allUsernames = [];
 let hideValue = false;
 let pausedCheck = true;
+let JoiningCode = null;
 
-
-// 
+//
 
 function generateRandomNumber(callback) {
   if (generatedNumbers.length === 90) {
     // if all number got generated we are sending generateWinLogic
-    io.emit("GenerateWinLogic")
+    io.emit("GenerateWinLogic");
     console.log("All numbers have been generated.");
     return;
   }
 
   let randomNumber;
-  if(generatedNumbers.length !== 90){
+  if (generatedNumbers.length !== 90) {
     do {
       randomNumber = Math.floor(Math.random() * 90) + 1;
     } while (generatedNumbers.includes(randomNumber));
-  
+
     generatedNumbers.push(randomNumber);
     console.log(generatedNumbers);
-  
-    callback(randomNumber);
 
+    callback(randomNumber);
   }
- 
 }
-// 
+//
 io.on("connection", (socket) => {
   console.log("A user connected");
 
@@ -82,15 +77,14 @@ io.on("connection", (socket) => {
     console.log("Host connected with socket ID:", hostSocketId);
     isHostAssigned = true;
     // Emit the hostSocketId to all clients that mapped
-    io.emit("hostSocketId", hostSocketId); 
+    io.emit("hostSocketId", hostSocketId);
   }
 
   socket.on("pageReload", () => {
     //console.log('Page reloaded');
-    // After page reload we are clearing the generated num 
-    generatedNumbers = []; 
+    // After page reload we are clearing the generated num
+    generatedNumbers = [];
   });
-
 
   socket.emit("hostSocketId", hostSocketId);
   liveUsers.push(socket.id);
@@ -101,22 +95,23 @@ io.on("connection", (socket) => {
   socket.on("hideValue", (value) => {
     socket.emit("showPassed", value);
   });
-  socket.on("hideORnot",(data)=>{
-  hideValue = data;
-
-  })
-  socket.on("getShoworHide",()=>{
+  socket.on("hideORnot", (data) => {
+    hideValue = data;
+  });
+  socket.on("getShoworHide", () => {
     io.emit("showHideOrNot", hideValue);
-  })
+  });
 
-  socket.on("setPaused",(data)=>{
+  socket.on("setPaused", (data) => {
+    console.log(data);
     pausedCheck = data;
-    })
-    socket.on("getPausedValue",()=>{
-      io.emit("PausedOrNot", pausedCheck);
-    })
+    io.emit("PausedOrNot", pausedCheck);
+  });
+  // socket.on("getPausedValue", () => {
+    
+  // });
 
-    // this is listening from host page after getting we are emitting randomNumber to host 
+  // this is listening from host page after getting we are emitting randomNumber to host
   socket.on("getRandomNumber", () => {
     if (generatedNumbers.length !== 90) {
       console.log("Received request for random number from client");
@@ -126,7 +121,7 @@ io.on("connection", (socket) => {
       generateRandomNumber((randomNumber) => {
         if (randomNumber !== null) {
           console.log("Generated random number:", randomNumber);
-          // emiting randomNumber to Host page 
+          // emiting randomNumber to Host page
           io.emit("randomNumber", randomNumber, generatedNumbers);
           console.log("sent number to client");
         } else {
@@ -142,29 +137,37 @@ io.on("connection", (socket) => {
     console.log(generatedNumbers);
   });
 
-
   // this is listening from joinGameForm.js
   socket.on("dataEntered", (userData) => {
-    const { joiningCode, name } = userData;
-    console.log(joiningCode, name);
+    if (userData) {
+      const { joiningCode, name } = userData;
+      JoiningCode = joiningCode;
+      console.log(joiningCode, name);
 
-    // sending to all ..we r listening from game Creation page for name ,current player socket id and host id
-    io.emit("userNameEntered", { name, socketId: socket.id, hostSocketId }); 
+      // sending to all ..we r listening from game Creation page for name ,current player socket id and host id
+      io.emit("userNameEntered", { name, socketId: socket.id, hostSocketId });
+    } else {
+      io.emit("JoinCode", JoiningCode);
+    }
   });
 
+  socket.on("getDisplayData", () => {
+    io.emit("displayUsers", allUsernames);
+  });
 
-  socket.on("getDisplayData",()=>{
-    io.emit("displayUsers",allUsernames);
-  })
+  socket.on("userData2Host", (userData) => {
+    io.emit("ClaimData", userData);
+  });
 
-
-  //emit comes from Game Creation this will listen from the game creation 
+  //emit comes from Game Creation this will listen from the game creation
   socket.on("joinGameData", (usernames) => {
-    const uniqueSocketIds = new Set(allUsernames.map(user => user.socketId));
-  
-    // Filter out duplicate usernames based on socketId it creates duplicates so 
-    const uniqueUsernames = usernames.filter(user => !uniqueSocketIds.has(user.socketId));
-  
+    const uniqueSocketIds = new Set(allUsernames.map((user) => user.socketId));
+
+    // Filter out duplicate usernames based on socketId it creates duplicates so
+    const uniqueUsernames = usernames.filter(
+      (user) => !uniqueSocketIds.has(user.socketId)
+    );
+
     allUsernames.push(...uniqueUsernames);
 
     // this emit will send to join page and display the data (username and socketID)
@@ -172,57 +175,51 @@ io.on("connection", (socket) => {
   });
 
   // we are getting this from gameplay and sending to every user who is this winner
-  socket.on("winner",(winner)=>{
+  socket.on("winner", (winner) => {
     // for everyone winner is sended (this is for host)
-    io.emit("DecalreWinner",winner)
-  })
-
-
-  socket.on("FastFiveClaim", (userData) => {
-    console.log(userData);
-    io.emit("uniqueFastFive", { userData, allUsernames });
+    io.emit("DecalreWinner", winner);
   });
-  socket.on("FirstRowClaim", (userData) => {
-    console.log(userData);
-    io.emit("uniqueFirstRow", { userData, allUsernames });
+
+  socket.on("FastFiveClaim", () => {
+    io.emit("uniqueFastFive");
   });
-  socket.on("fullHouseClaim", (userData) => {
-    console.log(userData);
-    io.emit("uniqueFullHouse", { userData, allUsernames });
+  socket.on("FirstRowClaim", () => {
+    io.emit("uniqueFirstRow");
+  });
+  socket.on("fullHouseClaim", () => {
+    io.emit("uniqueFullHouse");
   });
 
   socket.on("updatePoints", ({ name, point }) => {
     io.emit("pointsUpdated", { name, point });
   });
-  
 
-  socket.on("fastFiveName2Host",(data)=>{
+  socket.on("fastFiveName2Host", (data) => {
     // sending the name of the player who claimed fastest five (to Host)
-    io.emit("NameofFastFive" ,data)
-  })
-  socket.on("firstRowName2Host",(data)=>{
-    io.emit("NameofFirstRow" ,data)
-  })
-  socket.on("fullHouseName2Host",(data)=>{
-    io.emit("NameofFullHouse" ,data)
-  })
+    io.emit("NameofFastFive", data);
+  });
+  socket.on("firstRowName2Host", (data) => {
+    io.emit("NameofFirstRow", data);
+  });
+  socket.on("fullHouseName2Host", (data) => {
+    io.emit("NameofFullHouse", data);
+  });
 
   console.log(liveUsers);
-  
+
   // this is getting from manual and auto host page
   socket.on("hostExited", () => {
     // emitting to every user that host disconnected to gameplay.js
     io.emit("hostDisconnected");
   });
 
-
   // This is coming from game creation page when startGame got we are starting game for everyone
-// After game starts sending username to HOST and PLAYERS
+  // After game starts sending username to HOST and PLAYERS
   socket.on("startGame", () => {
     console.log(allUsernames);
 
-    // 
-    io.emit("displayUsers",allUsernames);
+    //
+    io.emit("displayUsers", allUsernames);
 
     // joinGame
     io.emit("gameStarted");
@@ -239,11 +236,9 @@ io.on("connection", (socket) => {
     liveUsers = liveUsers.filter((user) => user !== socket.id);
     io.emit("liveUsers", liveUsers);
     io.emit("disconnected", disconnectedSocketId);
-    io.emit("displayUsers",allUsernames);
+    io.emit("displayUsers", allUsernames);
 
-
-
-    allUsernames = allUsernames.filter(user => user.socketId !== socket.id);
+    allUsernames = allUsernames.filter((user) => user.socketId !== socket.id);
     io.emit("allUsernames", allUsernames);
 
     if (disconnectedSocketId === hostSocketId) {
@@ -266,17 +261,11 @@ io.on("connection", (socket) => {
       console.log("Invalid joining code:", receivedCode);
     }
   });
-
-
 });
 
-
 // Starting Server
-const PORT = 3309
-const hostname = process.env.HOSTNAME || "192.168.10.156";
+const PORT = 3309;
+const hostname = process.env.HOSTNAME || `${API_URL}`;
 httpServer.listen(PORT, hostname, () => {
   console.log(`Server is running on http://${hostname}:${PORT}`);
 });
-
-
-

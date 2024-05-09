@@ -16,7 +16,7 @@ const Host = ({ socket }) => {
   const [displayUsers, setDisplayUsers] = useState([]);
 
 
-  const [claims, setClaims] = useState({});
+  const [claims, setClaims] = useState(null);
 
   // Confirm reload or exit
   useEffect(() => {
@@ -63,21 +63,13 @@ const Host = ({ socket }) => {
     socket.on("DecalreWinner", (data) => {
       setWinner(data);
     });
+    
+    socket.on("ClaimData",(userData)=>{
+      console.log(userData);
+        setClaims(userData)
+    })
 
-    // getting the name of the fastest five claimed player from via Gameplay through server.js
-    socket.on("NameofFastFive", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, fastFive: data }));
-    });
-
-    // getting the name of the first row claimed player from via Gameplay through server.js
-    socket.on("NameofFirstRow", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, firstRow: data }));
-    });
-
-    // getting the name of the full house claimed player from via Gameplay through server.js
-    socket.on("NameofFullHouse", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, fullHouse: data }));
-    });
+   
 
     // after game started we get the username data and socketId / 
     socket.on("displayUsers", (data) => {
@@ -96,12 +88,12 @@ const Host = ({ socket }) => {
     };
   }, [intervalId, paused, socket]);
 
-  // with 5 s interval calling emiting the getRandomNum
+  // with 3 s interval calling emiting the getRandomNum
   const handleGenerateRandomNumber = () => {
     if (!paused && intervalId === null && winner === null) {
       const id = setInterval(() => {
         socket.emit("getRandomNumber");
-      }, 5000);
+      }, 3000);
       setIntervalId(id);
     }
   };
@@ -117,6 +109,7 @@ const Host = ({ socket }) => {
   const handlePauseResume = () => {
     setPaused((prevPaused) => !prevPaused);
     socket.emit("setPaused", paused);
+    console.log(paused);
 
     if (!paused && intervalId === null) {
       console.log("started");
@@ -152,13 +145,7 @@ const Host = ({ socket }) => {
         )}
       </div>
       
-      {Object.keys(claims).length !== 0 && (
-      <div className="auto-host-claim">
-       {claims.fastFive&& <h6><span className="text-success"> {claims.fastFive}</span> Claimed the Fastest Five</h6>}
-        {claims.firstRow && <h6><span className="text-success">{claims.firstRow}</span> Claimed the First Row</h6>}
-        {claims.fullHouse && <h6><span className="text-success">{claims.fullHouse}</span> Claimed the Full House</h6>}
-       </div>
-      )}
+      
 
 
       <Options

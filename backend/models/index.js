@@ -21,11 +21,16 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.users = require("./users.js")(sequelize, DataTypes);
+db.tickets = require("./tickets.js")(sequelize, DataTypes)
+
+db.users.belongsTo(db.tickets, { foreignKey: 'ticket_id', as: 'tickets' });
 
 
-db.sequelize.sync({ force: false }).then(() => {
-  console.log("Re-sync Done ");
+db.users.sync({ force: false }).then(() => {
+  console.log("Re-sync Done for Users Table");
 });
+
+
 
 
 module.exports = db;

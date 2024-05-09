@@ -25,25 +25,24 @@ const GamePlay = ({ socket }) => {
   const [showNumberDropDown, setShowNumberDropDown] = useState(false);
   const [strikedNumbers, setStrikedNumbers] = useState([]);
   const [points, setPoints] = useState({});
-  const [usernames, setUsernames] = useState([]);
-  const [fastfive, setFastFive] = useState(null);
-  const [firstRow, setFirstRow] = useState(null);
-  const [fullHouse, setFullHouse] = useState(null);
+  const [userData, setUserData] = useState([]);
+  const [fastfive, setFastFive] = useState(false);
+  const [firstRow, setFirstRow] = useState(false);
+  const [fullHouse, setFullHouse] = useState(false);
   const [winner, setWinner] = useState(null);
 
   const [hideValue, setHideValue] = useState(false);
   const [claimsMade, setClaimsMade] = useState(0);
   const [displayWinner, setDisplayWinner] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
+  const [joiningCode, setJoiningCode] = useState("");
 
   // Hide Passed value button from host
   useEffect(() => {
     socket.emit("getShoworHide");
     socket.on("showHideOrNot", (data) => {
       setHideValue(data);
-      console.log(data + "!@#");
     });
-    console.log(hideValue + "New DATA");
     return () => {
       socket.off("showHideOrNot");
     };
@@ -54,7 +53,7 @@ const GamePlay = ({ socket }) => {
     if (winner) {
       const timeoutId = setTimeout(() => {
         setDisplayWinner(true);
-      }, 1500);
+      }, 3000);
 
       return () => clearTimeout(timeoutId);
     }
@@ -89,29 +88,43 @@ const GamePlay = ({ socket }) => {
         console.error("Error fetching random tickets:", e);
       }
     };
+  
+    if (!tickets || Object.keys(tickets).length === 0) {
+      fetchRandomTickets();
+    }
+  }, [tickets]); 
+  
 
-    fetchRandomTickets();
-  }, []);
+  useEffect(() => {
+    const handleUpdateTicket = async () => {
+      if (tickets.id &&joiningCode) {
+        try {
+          const currentSocketId = socket.id;
+
+          await axios.put(`${BASE_URL}/update-ticket`, {
+            id: tickets.id,
+            socketId: currentSocketId,
+          });
+        } catch (err) {
+          console.error("Error updating ticket:", err);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      handleUpdateTicket();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [tickets.id, socket.id,joiningCode]);
+
+  
+  
+  
 
   // Winning logic and getting username and points
   useEffect(() => {
-    const calculateWinner = () => {
-      let maxPoints = -1;
-      let winner = null;
-
-      // Iterate over points to find the user with the highest points
-      for (const name in points) {
-        if (points.hasOwnProperty(name)) {
-          if (points[name] > maxPoints) {
-            maxPoints = points[name];
-            winner = name;
-            socket.emit("winner", winner);
-          }
-        }
-      }
-      // after calculating points we are stting the winner
-      setWinner(winner);
-    };
+    
 
     // if host disconnected we redirecting
     const handleHostDisconnected = () => {
@@ -125,11 +138,14 @@ const GamePlay = ({ socket }) => {
     socket.on("hostDisconnected", handleHostDisconnected);
 
     // get paused or not value
-    socket.emit("getPausedValue");
+    // socket.emit("getPausedValue");
     // check weather paused or not
-    socket.on("PausedOrNot", (value) => {
-      setPaused(value);
+    socket.on("PausedOrNot", (pausedCheck) => {
+      console.log(pausedCheck + " Paused");
+      setPaused(pausedCheck);
     });
+
+
 
     // get random number
     socket.on("randomNumber", (randomNumber) => {
@@ -137,67 +153,37 @@ const GamePlay = ({ socket }) => {
       setGeneratedNumbers((prevNumbers) => [...prevNumbers, randomNumber]);
     });
 
-    
     socket.emit("getDisplayData");
 
     // joined user name and data is got after game starts
     socket.on("displayUsers", (userData) => {
-      setUsernames(userData);
+      // setUsernames(userData);
     });
 
     // After emit Fastfive Claim we get the data from server.js
-    socket.on("uniqueFastFive", ({ userData, allUsernames }) => {
-      const user = allUsernames.find((user) => user.socketId === userData);
-      if (user) {
-        const { name } = user;
-
-        // sending name alone to server.js then to host
-        socket.emit("fastFiveName2Host", name);
-        setFastFive(name);
-        updatePoints(name, 5);
-      } else {
-        console.error("User not found for socketId:", userData);
-      }
-      setClaimsMade((prevClaims) => prevClaims + 1);
+    socket.on("uniqueFastFive", () => {
+      setFastFive(true);
+      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
     });
 
     // After emit FirstRow Claim we get the data from server.js
 
-    socket.on("uniqueFirstRow", ({ userData, allUsernames }) => {
-      const user = allUsernames.find((user) => user.socketId === userData);
-      if (user) {
-        const { name } = user;
-        setFirstRow(name);
+    socket.on("uniqueFirstRow", () => {
+      setFirstRow(true);
+      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
 
-        // sending name alone to server.js then to host
-        socket.emit("firstRowName2Host", name);
-
-        updatePoints(name, 10);
-      } else {
-        console.error("User not found for socketId:", userData);
-      }
-      setClaimsMade((prevClaims) => prevClaims + 1);
     });
 
     // After emit FullHouse Claim we get the data from server.js
-    socket.on("uniqueFullHouse", ({ userData, allUsernames }) => {
-      const user = allUsernames.find((user) => user.socketId === userData);
-      if (user) {
-        const { name } = user;
-        setFullHouse(name);
+    socket.on("uniqueFullHouse", () => {
+      setFullHouse(true);
+      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
 
-        // sending name alone to server.js then to host
-        socket.emit("fullHouseName2Host", name);
-        updatePoints(name, 20);
-      } else {
-        console.error("User not found for socketId:", userData);
-      }
-      setClaimsMade((prevClaims) => prevClaims + 1);
     });
 
     // after 90 number got created we are calling calculateWinner
     socket.on("GenerateWinLogic", () => {
-      calculateWinner();
+      // calculateWinner();
       // after 90 num generation automatically winner will be declared even not fully calimed
       socket.emit("winner", winner);
     });
@@ -205,13 +191,10 @@ const GamePlay = ({ socket }) => {
     socket.on("pointsUpdated", ({ name, point }) => {
       updatePoints(name, point);
     });
+    socket.emit("userData2Host",userData)
 
-    if (claimsMade === 3) {
-      calculateWinner();
-      // if 3 claims made we are sending winner to server.js
-      socket.emit("winner", winner);
-      setClaimsMade(-1);
-    }
+
+
 
     return () => {
       socket.off("randomNumber");
@@ -220,11 +203,57 @@ const GamePlay = ({ socket }) => {
       socket.off("uniqueFirstRow");
       socket.off("uniqueFullHouse");
       socket.off("pointsUpdated");
+      socket.off("dataEntered");
+      socket.off("JoinCode");
+      socket.off("PausedOrNot")
+      socket.off("getPausedValue")
       // if host disconnected we are calling handleHostDisconnected
       socket.off("hostDisconnected", handleHostDisconnected);
     };
     // eslint-disable-next-line
-  }, [socket, usernames, points, claimsMade, winner]);
+  }, [socket, points, claimsMade, winner]);
+
+  if (!joiningCode) {
+    socket.emit("dataEntered");
+  }
+
+  socket.on("JoinCode", (JoiningCode) => {
+    setJoiningCode(JoiningCode);
+
+    socket.off("JoinCode");
+  });
+
+  useEffect(() => {
+    if (joiningCode) { 
+      axios
+        .get(`${BASE_URL}/claim-data/${joiningCode}`)
+        .then((response) => {
+          setUserData(response.data);
+        })
+        .catch((e) => {
+          console.error('Error fetching claim data:', e);
+        });
+    }
+  }, [fastfive, firstRow, fullHouse, joiningCode]);
+  
+
+  if (claimsMade === 3) {
+    setClaimsMade(-1); 
+    setTimeout(() => {
+    socket.emit("winner", winner);
+        axios
+            .get(`${BASE_URL}/get-winner/${joiningCode}`)
+            .then((response) => {
+                setWinner(response.data.winner);
+                console.log(response.data);
+            })
+            .catch((e) => {
+                console.error('Error fetching claim data:', e);
+            });
+    }, 1500); 
+}
+
+
 
   // Fnc for Points updation
   const updatePoints = (name, increment) => {
@@ -236,10 +265,10 @@ const GamePlay = ({ socket }) => {
     // Emit updated points to server
   };
   // finiding user name by socket>id and mapping
-  const getUsernameBySocketId = (socketId) => {
-    const user = usernames.find((user) => user.socketId === socketId);
-    return user ? user.name : null;
-  };
+  // const getUsernameBySocketId = (socketId) => {
+  //   const user = usernames.find((user) => user.socketId === socketId);
+  //   return user ? user.name : null;
+  // };
 
   // Cell click check and pusing
   const handleCellClick = (rowIndex, cellIndex) => {
@@ -249,26 +278,35 @@ const GamePlay = ({ socket }) => {
       if (!strikedNumbers.includes(cellNumber)) {
         if (generatedNumbers.includes(parseInt(cellNumber, 10))) {
           setStrikedNumbers((prevNumbers) => [...prevNumbers, cellNumber]);
-          const currentUser = getUsernameBySocketId(socket.id);
-          if (currentUser) {
-            // socket.emit("updatePoints", { name: currentUser, point: 1 });
-          } else {
-            console.error("User not found for socketId:", socket.id);
-          }
         }
       }
     }
   };
 
   // Logic for fast five claim
-  const claimFastestFive = () => {
+  const claimFastestFive = async () => {
     if (!tickets.hostTicket) {
       alert("Host ticket data is not available.");
       return;
     }
     if (strikedNumbers.length >= 5) {
-    // emit the current player clicked socket id
-      socket.emit("FastFiveClaim", socket.id);
+      // emit the current player clicked socket id
+
+      const data = {
+        claim: "fastFive",
+        socketId: socket.id,
+        joiningCode: joiningCode,
+      };
+
+      try {
+        await axios.put(`${BASE_URL}/claim-validation`, data);
+       
+      } catch (e) {
+        console.error("Error updating ticket:", e);
+      }
+
+      socket.emit("FastFiveClaim");
+
       toast.success("You Claimed Fast Five", {
         position: "bottom-center",
         autoClose: 5000,
@@ -286,7 +324,7 @@ const GamePlay = ({ socket }) => {
   };
 
   // Logic for First row
-  const claimFirstRow = () => {
+  const claimFirstRow = async () => {
     if (!tickets.hostTicket) {
       alert("Host ticket data is not available.");
       return;
@@ -303,9 +341,23 @@ const GamePlay = ({ socket }) => {
     }
 
     if (allCellsStriked) {
+      // emit the current player clicked socket id
 
-    // emit the current player clicked socket id
-      socket.emit("FirstRowClaim", socket.id);
+      const data = {
+        claim: "firstRow",
+        socketId: socket.id,
+        joiningCode: joiningCode,
+      };
+
+      try {
+        await axios.put(`${BASE_URL}/claim-validation`, data);
+        
+      } catch (e) {
+        console.log("Error" + e);
+      }
+
+      socket.emit("FirstRowClaim");
+
       toast.success("You Claimed First Row", {
         position: "bottom-center",
         autoClose: 5000,
@@ -323,7 +375,7 @@ const GamePlay = ({ socket }) => {
   };
 
   // Logic for Full house
-  const claimFullHouse = () => {
+  const claimFullHouse = async () => {
     if (!tickets.hostTicket) {
       alert("Host ticket data is not available.");
       return;
@@ -340,9 +392,24 @@ const GamePlay = ({ socket }) => {
     }
 
     if (allNumbersStriked) {
+      // emit the current player clicked socket id
 
-    // emit the current player clicked socket id
-      socket.emit("fullHouseClaim", socket.id);
+
+      const data = {
+        claim: "fullHouse",
+        socketId: socket.id,
+        joiningCode: joiningCode,
+      };
+
+      try {
+        await axios.put(`${BASE_URL}/claim-validation`, data);
+      
+      } catch (e) {
+        console.log("Error" + e);
+      }
+
+      socket.emit("fullHouseClaim");
+
       toast.success("You Claimed Full House", {
         position: "bottom-center",
         autoClose: 5000,
@@ -401,28 +468,33 @@ const GamePlay = ({ socket }) => {
         </div>
       </div>
 
-      {claimsMade !== 0 && (
-        <div>
-          <h2 className="mx-3">Claims:</h2>
-          <div className="claims">
-            {fastfive && (
-              <p key={`${socket.id}-fastfive`}>
-                <span>{fastfive}</span> claimed Fastest Five! +5
-              </p>
-            )}
-            {firstRow && (
-              <p key={`${socket.id}-firstRow`}>
-                <span>{firstRow}</span> claimed First Row! +10
-              </p>
-            )}
-            {fullHouse && (
-              <p key={`${socket.id}-fullHouse`}>
-                <span>{fullHouse}</span> claimed Full House! +15
-              </p>
-            )}
-          </div>
+      {userData && userData.length > 0 && (
+  <div>
+    <h2 className="mx-3">Claims:</h2>
+    <div className="claims">
+      {userData.map((user, index) => (
+        <div key={index}>
+          {user.claims.fastFive && (
+            <p>
+              <span>{user.name}</span> claimed Fastest Five! +5
+            </p>
+          )}
+          {user.claims.firstRow && (
+            <p>
+              <span>{user.name}</span> claimed First Row! +10
+            </p>
+          )}
+          {user.claims.fullHouse && (
+            <p>
+              <span>{user.name}</span> claimed Full House! +15
+            </p>
+          )}
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
+
 
       <div className="container-play">
         {error && <div>Error: {error}</div>}
@@ -430,7 +502,7 @@ const GamePlay = ({ socket }) => {
           <button
             className="btn btn-secondary text-warning mt-4"
             onClick={claimFastestFive}
-            disabled={fastfive !== null}
+            disabled={fastfive}
           >
             {fastfive && (
               <ConfettiExplosion
@@ -441,7 +513,7 @@ const GamePlay = ({ socket }) => {
             Claim for Fastest Five
           </button>
           <button
-            disabled={firstRow !== null}
+            disabled={firstRow}
             className="btn btn-secondary text-warning mt-4"
             onClick={claimFirstRow}
           >
@@ -454,7 +526,7 @@ const GamePlay = ({ socket }) => {
             Claim for First Row
           </button>
           <button
-            disabled={fullHouse !== null}
+            disabled={fullHouse}
             className="btn btn-secondary text-warning mt-4"
             onClick={claimFullHouse}
           >
@@ -505,14 +577,14 @@ const GamePlay = ({ socket }) => {
             </tr>
           </thead>
           <tbody>
-            {usernames.map((user, index) => (
+            {userData.map((user, index) => (
               <tr key={index}>
                 {user.socketId === socket.id ? (
                   <td className="text-danger">{user.name} (You)</td>
                 ) : (
                   <td>{user.name}</td>
                 )}
-                <td>{points[user.name] || 0}</td>
+                <td>{user.score} </td>
               </tr>
             ))}
           </tbody>
@@ -545,10 +617,10 @@ const GamePlay = ({ socket }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {usernames.map((user) => (
-                    <tr key={`${user.name}-${user.socketId}`}>
+                  {userData.map((user) => (
+                    <tr key={`${user.name}-${socket.id}`}>
                       <td>{user.name}</td>
-                      <td>{points[user.name] || 0}</td>
+                      <td>{user.score}</td>
                     </tr>
                   ))}
                 </tbody>

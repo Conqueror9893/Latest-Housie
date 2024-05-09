@@ -12,7 +12,7 @@ const HostManual = ({ socket }) => {
 
   const [displayUsers, setDisplayUsers] = useState([]);
   const [winner, setWinner] = useState(null);
-  const [claims, setClaims] = useState({});
+  const [claims, setClaims] = useState(null);
 
   const rows = [];
   for (let i = 0; i < numbers.length; i += 10) {
@@ -59,29 +59,18 @@ const HostManual = ({ socket }) => {
       setWinner(data);
     });
 
-    // getting the name of the fastest five claimed player from via Gameplay through server.js
-    socket.on("NameofFastFive", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, fastFive: data }));
-    });
-
-    // getting the name of the first Row claimed player from via Gameplay through server.js
-    socket.on("NameofFirstRow", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, firstRow: data }));
-    });
-
-    // getting the name of the Full house claimed player from via Gameplay through server.js
-    socket.on("NameofFullHouse", (data) => {
-      setClaims((prevClaims) => ({ ...prevClaims, fullHouse: data }));
-    });
+    socket.on("ClaimData",(userData)=>{
+      console.log(userData);
+        setClaims(userData)
+    })
 
     return () => {
       clearInterval(intervalId);
       socket.off("randomNumber");
       socket.off("displayUsers")
       socket.off("DecalreWinner");
-      socket.off("NameofFastFive");
-      socket.off("NameofFirstRow");
-      socket.off("NameofFullHouse");
+      socket.off("ClaimData");
+
     };
   }, [intervalId, socket]);
 
@@ -147,28 +136,9 @@ const HostManual = ({ socket }) => {
         </div>
       </div>
 
-      {Object.keys(claims).length !== 0 && (
-        <div className="host-claim">
-          {claims.fastFive && (
-            <li>
-              <span className="text-success">{claims.fastFive}</span> Claimed
-              the Fastest Five
-            </li>
-          )}
-          {claims.firstRow && (
-            <li>
-              <span className="text-success">{claims.firstRow}</span> Claimed
-              the First Row
-            </li>
-          )}
-          {claims.fullHouse && (
-            <li>
-              <span className="text-success">{claims.fullHouse} </span>Claimed
-              the Full House
-            </li>
-          )}
-        </div>
-      )}
+    
+       
+
 
       <div className="users-list">
         <h2>Live Users:</h2>

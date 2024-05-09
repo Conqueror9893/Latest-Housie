@@ -51,16 +51,17 @@ const PassedValueModal = ({socket}) => {
         className="custom-modal"
         overlayClassName="custom-overlay"
       >
-        <div className="popup-content d-flex flex-column">
-          <div>
+        <div className=" d-flex flex-column ">
+          <div className="mb-4 ">
             {/* Checkbox to hide the passed value */}
             <input
+            className="popup-content"
               type="checkbox"
-              id="hide-passed-value-checkbox"
+              id="hide-passed-value-checkbox "
               checked={!hideValue}
               onChange={handleHidePassedValueChange}
             />
-            <label htmlFor="hide-passed-value-checkbox">Hide Passed value</label>
+            <label className="mx-3 " htmlFor="hide-passed-value-checkbox">Hide Passed value</label>
           </div>
           <div>
             {/* Checkbox to show the passed value */}
@@ -70,7 +71,7 @@ const PassedValueModal = ({socket}) => {
               checked={hideValue}
               onChange={handleHidePassedValueChange}
             />
-            <label htmlFor="show-passed-value-checkbox">Show Passed value</label>
+            <label className="mx-3" htmlFor="show-passed-value-checkbox">Show Passed value</label>
           </div>
         </div>
       </Modal>

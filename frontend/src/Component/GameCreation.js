@@ -40,8 +40,8 @@ const GameCreation = ({ socket }) => {
         const response = await axios.get(`${BASE_URL}/liveUsers`);
         setLiveUsers(response.data);
         //setHostId(liveUsers[0])
-      } catch (error) {
-        console.error("Error fetching live users:", error);
+      } catch (err) {
+        console.error("Error fetching live users:", err);
       }
     };
 
@@ -105,7 +105,7 @@ const GameCreation = ({ socket }) => {
 
     try {
       document.execCommand("copy");
-      toast.success("Text copied to clipboard!", {
+      toast.success("Link copied to clipboard!", {
         autoClose: 1000,
         closeOnClick: true,
       });
@@ -165,7 +165,7 @@ const GameCreation = ({ socket }) => {
                     </li>
                   ))}
                 </ul> */}
-                <h3 className="text-center my-3">Joined Users:</h3>
+                <h3 className="text-center mb-3">Joined Users:</h3>
                 <ul className="mb-2 text-center my-3">
                   <li className="text-center text-danger">
                     {hostId && ` (Host)  ${hostId}`}

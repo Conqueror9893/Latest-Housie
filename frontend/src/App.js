@@ -4,7 +4,6 @@ import GamePlay from './Component/GamePlay';
 import JoinGameForm from './Component/JoinGameForm';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from './Component/LandingPage';
-import Test from './Component/Options';
 import Host from './Component/Host';
 import HostManual from './Component/HostManual';
 
@@ -32,18 +31,18 @@ function App() {
 
     <BrowserRouter>
       <Routes>
+      <Route path="*" element={<LandingPage />} />
+
       <Route path="/" element = {<LandingPage/>}/>
 
         <Route path="/create-game" element = {<GameCreation socket={socket}/>}/>
         <Route path="/join-game" element = {<JoinGameForm socket={socket}/>}/>
-        <Route path="/play-game" element = {<GamePlay socket={socket}/>}/>
         <Route path="/play-game" element = {<GamePlay socket={socket}/>}/>
         <Route path="/host-page" element = {<Host socket={socket}/>}/>
         <Route path="/host-manual" element = {<HostManual socket={socket}/>}/>
 
 
 
-        <Route path="/test" element={<Test/>} />
 
 
       </Routes>

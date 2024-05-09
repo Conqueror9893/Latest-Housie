@@ -18,26 +18,26 @@ const LandingPage = () => {
 
         {/* New game or Join Game */}
           <div className="options">
-            <div class="contents">
-              <Link to="create-game" class="  split-section left">
-                <div class="text-center">
-                  <div class="hero-text">New Game</div>
-                  <div class="hero-subtitle">
+            <div className="contents">
+              <Link to="create-game" className="  split-section left">
+                <div className="text-center">
+                  <div className="hero-text">New Game</div>
+                  <div className="hero-subtitle">
                     Host with friends using tickets.
                   </div>
                 </div>
               </Link>
-              <div class="divider">
-                <div class="circle">OR</div>
+              <div className="divider">
+                <div className="circle">OR</div>
               </div>
               <Link
                 to="join-game"
-                class=" split-section right"
+                className=" split-section right"
                 href="/participant/"
               >
-                <div class="text-center">
-                  <div class="hero-text">Join a Game</div>
-                  <div class="hero-subtitle">
+                <div className="text-center">
+                  <div className="hero-text">Join a Game</div>
+                  <div className="hero-subtitle">
                     Participate using an invite code.
                   </div>
                 </div>
@@ -48,8 +48,8 @@ const LandingPage = () => {
 
         {/* Information Section */}
         <section className="info">
-          <div class="grid-container">
-            <div class="play-online">
+          <div className="grid-container">
+            <div className="play-online">
               <h3 className="info-head underline-text">Play Online Tambola</h3>
               <p>
                 Housie Hosuie, is a popular game of chance played with tickets
@@ -64,7 +64,7 @@ const LandingPage = () => {
                 </li>
               </ul>
             </div>
-            <div class="rules">
+            <div className="rules">
               <h3 className="info-head underline-text">Rules</h3>
               <ol>
                 <li>
@@ -89,7 +89,7 @@ const LandingPage = () => {
                 </li>
               </ol>
             </div>
-            <div class="points">
+            <div className="points">
               <h3 className="info-head underline-text">Points</h3>
               <ul>
                 {/* <li>Marking off a number: +1 point</li> */}
