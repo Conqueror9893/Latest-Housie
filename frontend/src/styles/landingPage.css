@@ -160,7 +160,6 @@
 
 
 
-/* Media query for tablets and mobile devices */
 @media screen and (max-width: 768px) {
   .home__intro {
       font-size: 1.8rem; 
@@ -199,18 +198,20 @@
 }
 
   .grid-container {
-      grid-template-columns: 1fr; /* Display information in a single column */
+      grid-template-columns: 1fr; 
   }
 
   h2, h3 {
-      font-size: 1.4rem; /* Decrease font size */
+      font-size: 1.4rem; 
   }
 
   p, ul, li {
-      font-size: .9rem; /* Decrease font size */
+      font-size: .9rem; 
   }
 
   .footer {
-      margin-top: 3rem; /* Adjust margin */
+      margin-top: 3rem; 
   }
 }
+
+

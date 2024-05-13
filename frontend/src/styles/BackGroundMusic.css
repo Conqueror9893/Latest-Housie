@@ -1,0 +1,20 @@
+.pulse {
+    animation: pulse-animation 1s infinite alternate;
+  }
+  
+  @keyframes pulse-animation {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(1.2);
+      opacity: 0;
+    }
+  }
+  
+  .wave {
+    width: 100%;
+    height: auto;
+  }
+  

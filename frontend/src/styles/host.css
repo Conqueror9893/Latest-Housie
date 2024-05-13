@@ -16,12 +16,13 @@
   background-color: #007bff; /* Background color */
   color: #ffffff; /* Text color */
   border-radius: 20%; /* Adjust the border-radius to control the roundness */
-  padding: 20px
+  padding: 35px
 }
 .host-container p:hover {
   background-color: black;
   color: white;
 }
+
 
 
 
@@ -110,9 +111,116 @@
   }
   
 
-  
 
+  .table-host table {
+    border-collapse: separate;
+    border-spacing: 5px; 
+    width: 80%;
+  }
+  
+  .table-host td {
+    
+    padding: 1px 5px;
+    border: 1px solid #ccc;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color 0.4s ease; 
+    background-color: white;
+
+  }
+  .table-host td.clicked {
+    background-color: rgba(223, 223, 223, 0.692);
+  }
+  .table-host td:hover:not(.disabled , .strikethrough) {
+    background-color: rgba(223, 223, 223, 0.692);
+    cursor: pointer;
+  }
   
   
+  .table-host th {
+    background-color: #f2f2f2;
+    padding: 10px;
+    border: 2px solid #ccc;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+  }
   
+  .custom-modal-host {
+    position: absolute;
+    top: 50%;
+    left: 85%;
+    transform: translate(-50%, -50%);
+    background-color: rgb(255, 255, 255);
+    padding:20px 25px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+  .claims-list {
+    list-style: none;
+    padding: 0;
+  }
   
+  .claims-list li {
+    display: inline-block;
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  .claims-list li:hover {
+    position: relative;
+  }
+  
+  .claims-list li:hover::after {
+    content: attr(data-fullname); /* Show full claim name on hover */
+    position: absolute;
+    background-color: white;
+    border: 1px solid black;
+    padding: 5px;
+    border-radius: 5px;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+  }
+  
+  .claim-name{
+    background-color:rgba(255, 38, 0, 0.479);
+    padding: 3px;
+    border-radius: 10px;
+  }
+  
+  /* Modal overlay */
+
+
+/* Modal content */
+.modal-content {
+  position: absolute;
+  top:80%;
+  left:15%;
+  max-width: 80rem;
+  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Modal close button */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.modal-header .close {
+  background: none;
+ 
+}
+.modal-body{
+  display:flex;
+  flex-wrap:initial;
+}

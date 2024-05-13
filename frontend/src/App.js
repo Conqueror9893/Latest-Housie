@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 
 
 import io from "socket.io-client"; 
+import BackgroundMusic from './Component/BackgroundMusic';
 const { FETCH_URL } = require("./constant");
 
 const socket = io(FETCH_URL); 
@@ -40,6 +41,7 @@ function App() {
         <Route path="/play-game" element = {<GamePlay socket={socket}/>}/>
         <Route path="/host-page" element = {<Host socket={socket}/>}/>
         <Route path="/host-manual" element = {<HostManual socket={socket}/>}/>
+        <Route path="/bg" element={<BackgroundMusic/>}/>
 
 
 

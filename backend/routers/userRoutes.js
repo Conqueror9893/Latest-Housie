@@ -8,6 +8,8 @@ router.get('/getUsers', userController.getAllUsers);
 router.put('/update-ticket',userController.updateUserTicketIdBySocketId)
 
 router.get('/get-tickets',ticketController.getTickets)
+router.get('/get-tickets/:id',ticketController.getTicketById)
+
 
 router.get("/game/:id", gameController.redirectGame);
 router.get("/invitation", gameController.generateJoiningCodeEndpoint);

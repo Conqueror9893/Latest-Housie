@@ -47,11 +47,11 @@
   .table td.clicked {
     background-color: rgba(223, 223, 223, 0.692);
   }
-  .table td:hover {
-      background-color: rgba(223, 223, 223, 0.692);
-      cursor: pointer;
-
+  .table td:hover:not(.disabled , .strikethrough) {
+    background-color: rgba(223, 223, 223, 0.692);
+    cursor: pointer;
   }
+  
   
   .table th {
     background-color: #f2f2f2;
@@ -97,6 +97,10 @@
 .settings-icon:hover {
   color: red;
   transform:rotate(10deg);
+}
+
+.disabled {
+  background-color: red; /* Change to your desired disabled color */
 }
 
 
@@ -234,4 +238,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.latest-number {
+  background-color: blue;
+  color: white;
 }

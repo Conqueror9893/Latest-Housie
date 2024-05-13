@@ -1,8 +1,8 @@
 import React from "react";
-import Modal from "react-modal";
 import { CiSettings } from "react-icons/ci";
 import "../styles/home.css"; 
 import { Link } from "react-router-dom";
+import Modal from "react-modal";
 
 Modal.setAppElement("#root"); 
 

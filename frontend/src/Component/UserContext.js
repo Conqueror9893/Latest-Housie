@@ -9,7 +9,8 @@ const UserProvider = ({ children}) => {
   const [paused, setPaused] = useState(false);
 
   const [hideValue, setHideValue] = useState(true)
-
+  const [strikedNumbers, setStrikedNumbers] = useState([]);
+  const [disabledNumbers, setDisabledNumbers] = useState([]);
 
 
   function generateUserId() {
@@ -17,7 +18,7 @@ const UserProvider = ({ children}) => {
   }
 
   return (
-    <UserContext.Provider value={{ userId, liveUsers, setLiveUsers, paused, setPaused, hideValue,setHideValue }}>
+    <UserContext.Provider value={{ userId, liveUsers, setLiveUsers, paused, setPaused, hideValue,setHideValue ,strikedNumbers,setStrikedNumbers,disabledNumbers,setDisabledNumbers}}>
       {children}
     </UserContext.Provider>
   );

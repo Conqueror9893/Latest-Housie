@@ -1,5 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "../styles/host.css";
+import "../styles/gamePlay.css";
+
+import axios from "axios";
+import { GrContactInfo } from "react-icons/gr";
+import Modal from "react-modal";
+import { visualizeHost2PlayerTickets } from "../utils/VisualizeTicket";
+import { UserContext } from "./UserContext";
+
+const { FETCH_URL } = require("../constant");
+Modal.setAppElement("#root");
+
+const BASE_URL = FETCH_URL;
 
 const HostManual = ({ socket }) => {
   // eslint-disable-next-line
@@ -10,37 +22,93 @@ const HostManual = ({ socket }) => {
   const [struckNumbers, setStruckNumbers] = useState([]);
   const [intervalId, setIntervalId] = useState(null);
 
-  const [displayUsers, setDisplayUsers] = useState([]);
   const [winner, setWinner] = useState(null);
-  const [claims, setClaims] = useState(null);
+  const [userData, setUserData] = useState([]);
+  const [joiningCode, setJoiningCode] = useState("");
 
+  const [ticketData, setTicketData] = useState({});
+
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [showModal, setShowModal] = useState(false);
+  const { strikedNumbers, disabledNumbers } = useContext(UserContext);
+  const [isWinnerDeclared, setIsWinnerDeclared] = useState(false);
+
+  const [bingoState, setBingoState] = useState({
+    fastfive: false,
+    firstRow: false,
+    fullHouse: false,
+    middleRow: false,
+    lastRow: false,
+    diagonalCorner:false,
+    middle:false
+  });
+
+    // Divide the numbers into groups of 10 for each row
   const rows = [];
   for (let i = 0; i < numbers.length; i += 10) {
     rows.push(numbers.slice(i, i + 10));
   }
+
+  // Confirm Exit When Reload 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = "";
-  
+
       // Emit an event when the user leaves the page
       socket.emit("hostExited");
-  
+
       const confirmationMessage = "Are you sure you want to leave?";
       e.returnValue = confirmationMessage;
       return confirmationMessage;
     };
-  
+
     window.addEventListener("beforeunload", handleBeforeUnload);
-  
+
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [socket]); // Ensure socket is included in the dependencies array
-  
+  }, [socket]); 
 
+  // Fetch Ticket Based on the user selected
   useEffect(() => {
+    const fetchTicketData = async () => {
+      if (!showModal || !selectedUser) return;
 
+      try {
+        const response = await axios.get(
+          `${BASE_URL}/get-tickets/${selectedUser.ticket_id}`
+        );
+        console.log(response.data);
+        setTicketData(response.data);
+      } catch (error) {
+        console.error("Error fetching ticket data:", error);
+      }
+    };
+
+    fetchTicketData();
+  }, [showModal, selectedUser]);
+
+  // If claim happened and on load fetching Data from server
+  useEffect(() => {
+    if (joiningCode) {
+      setTimeout(() => {
+        axios
+          .get(`${BASE_URL}/claim-data/${joiningCode}`)
+          .then((response) => {
+            setUserData(response.data);
+            console.log(response.data);
+          })
+          .catch((e) => {
+            console.error("Error fetching claim data:", e);
+          });
+      }, 400);
+    }
+  }, [joiningCode, bingoState]);
+
+  // socket for sending selected random number
+  useEffect(() => {
     // listening randomNumber from Server.js and storing locally
     socket.on("randomNumber", (randomNumber) => {
       setLatestNumber(randomNumber);
@@ -49,31 +117,75 @@ const HostManual = ({ socket }) => {
         randomNumber,
       ]);
     });
-
-    // after game started we get the username data and socketId / 
-    socket.on("displayUsers", (data) => {
-      setDisplayUsers(data);
+    socket.on("uniqueFastFive", () => {
+      console.log("fast Five");
+      setBingoState((prevState) => ({
+        ...prevState,
+        fastfive: true,
+      }));
     });
+
+    socket.on("uniqueFirstRow", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        firstRow: true,
+      }));
+    });
+
+    socket.on("uniqueFullHouse", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        fullHouse: true,
+      }));
+    });
+
+    socket.on("uniqueMiddleRow", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        middleRow: true,
+      }));
+    });
+
+    socket.on("uniqueLastRow", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        lastRow: true,
+      }));
+    });
+    socket.on("uniqueDiagonalCornersClaim", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        diagonalCorner: true,
+      }));
+    });
+    socket.on("uniqueMiddleClaim", () => {
+      setBingoState((prevState) => ({
+        ...prevState,
+        middle: true,
+      }));
+    });
+
     // after winner is declared from Gameplay that is listening from server.js
-    socket.on("DecalreWinner", (data) => {
-      setWinner(data);
+    socket.on("DecalreWinner", (winner) => {
+      setWinner(winner);
     });
-
-    socket.on("ClaimData",(userData)=>{
-      console.log(userData);
-        setClaims(userData)
-    })
 
     return () => {
       clearInterval(intervalId);
       socket.off("randomNumber");
-      socket.off("displayUsers")
       socket.off("DecalreWinner");
-      socket.off("ClaimData");
+      socket.off("uniqueFastFive");
+      socket.off("uniqueFirstRow");
+      socket.off("uniqueFullHouse");
+      socket.off("uniqueMiddleRow");
+      socket.off("uniqueLastRow");
+      socket.off("uniqueDiagonalCornersClaim");
+      socket.off("uniqueMiddleClaim");
 
     };
   }, [intervalId, socket]);
 
+  // When Host AFK Auto number generation
   useEffect(() => {
     // after 10s we are calling
     const handleGenerateRandomNumber = () => {
@@ -85,7 +197,7 @@ const HostManual = ({ socket }) => {
     };
 
     if (!winner) {
-      // after 10 second of idle we are calling the handleGenerateRandomNumber 
+      // after 10 second of idle we are calling the handleGenerateRandomNumber
       const timerId = setTimeout(() => {
         handleGenerateRandomNumber();
       }, 10 * 1000);
@@ -97,20 +209,54 @@ const HostManual = ({ socket }) => {
     }
   }, [latestNumber, socket, intervalId, winner]);
 
-  // for everyclick of the cell we are striking 
+  // Checking if 5 claims was made enable the decalre winner button
+  useEffect(() => {
+    const { fastfive, firstRow, fullHouse, middleRow, lastRow, middle } = bingoState;
+    const anyFiveTrue = (fastfive && firstRow && middleRow && lastRow && middle) ||
+      (firstRow && middleRow && lastRow && middle && fullHouse) ||
+      (fastfive && firstRow && middleRow && lastRow && fullHouse);
+    setIsWinnerDeclared(anyFiveTrue);
+  }, [bingoState]);
+  
+
+  // Modal Open
+  const handleContactInfoClick = (user) => {
+    setSelectedUser(user);
+    setShowModal((prevState) => !prevState);
+  };
+  // On load joiningCode will not available at that time calling one time
+  if (!joiningCode) {
+    socket.emit("dataEntered");
+  }
+
+  socket.on("JoinCode", (JoiningCode) => {
+    setJoiningCode(JoiningCode);
+    socket.off("JoinCode");
+  });
+
+  // for everyclick of the cell we are striking
   const handleClick = (randomNumber) => {
     if (struckNumbers.includes(randomNumber)) {
       return;
     }
     setLatestNumber(randomNumber);
     setStruckNumbers([...struckNumbers, randomNumber]);
-    
+
     // the striked randomnumber was send to server.js
     socket.emit("manualRandom", randomNumber);
+  };
+  
+  // Decalre winner when 5 calims made
+  const declareWinner = () => {
+    socket.emit("decalreWinnerByHost");
   };
 
   return (
     <>
+
+      {strikedNumbers}
+
+      {/* table mapping  */}
       <div className="host-container">
         <p>{latestNumber}</p>
         <div className="host-table">
@@ -136,19 +282,87 @@ const HostManual = ({ socket }) => {
         </div>
       </div>
 
-    
-       
-
-
+      {/* User Info Stats */}
       <div className="users-list">
         <h2>Live Users:</h2>
         <ul className="live-users">
-          {displayUsers.map((user, index) => (
-            <li key={index}>{user.name}</li>
+          {userData.map((user, index) => (
+            <li key={index}>
+              {user.name}{" "}
+              <GrContactInfo
+                className="fs-3"
+                onClick={() => handleContactInfoClick(user)}
+              />
+            </li>
           ))}
+          {showModal && selectedUser && (
+            <>
+              <Modal
+                isOpen={showModal}
+                onRequestClose={() => setShowModal(false)}
+                className="custom-modal-host"
+                overlayClassName="custom-overlay"
+              >
+                <div className="d-flex justify-content-evenly">
+                  <h2 className="text-center ">
+                    <span className="text-success text-center">
+                      {selectedUser.name}'s
+                    </span>{" "}
+                    Stats
+                  </h2>
+                  <p>
+                    Score:{" "}
+                    <span className="bg-success text-white p-1 rounded-4">
+                      {selectedUser.score}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  {visualizeHost2PlayerTickets(
+                    ticketData,
+                    strikedNumbers,
+                    disabledNumbers
+                  )}
+                  <ul className="claims-list">
+                    <p className="fs-5">Claims:</p>
+                    {selectedUser.claims &&
+                      Object.entries(selectedUser.claims).map(
+                        ([claim, value]) => {
+                          let claimName = claim;
+                          if (claim.length > 2) {
+                            claimName = claim.replace(/([A-Z])/g, " $1").trim();
+                            claimName = claimName
+                              .split(" ")
+                              .map((word) => word.charAt(0).toUpperCase())
+                              .join("");
+                          }
+                          return (
+                            value && (
+                              <li
+                                className="mx-3 claim-name"
+                                key={claim}
+                                title={claimName}
+                                data-fullname={claim}
+                              >
+                                {claimName}
+                              </li>
+                            )
+                          );
+                        }
+                      )}
+                  </ul>
+                </div>
+              </Modal>
+            </>
+          )}
         </ul>
 
         {winner && <h2 className="text-danger">{winner} Won the Match</h2>}
+        {isWinnerDeclared && (
+          <button className="btn btn-warning" onClick={declareWinner}>
+            Declare Winner
+          </button>
+        )}
       </div>
     </>
   );

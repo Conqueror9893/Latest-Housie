@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from "./UserContext";
+import { toast, ToastContainer } from "react-toastify";
+import { IoMdClose } from "react-icons/io";
 import axios from "axios";
 import "../styles/gamePlay.css";
-import { Link, useNavigate } from "react-router-dom";
-import Confetti from "react-confetti";
-import ConfettiExplosion from "react-confetti-explosion";
-
-import img1 from "../assets/images/logo_new.png";
-import { IoMdClose } from "react-icons/io";
-import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Confetti from "react-confetti";
+import BackgroundMusic from "./BackgroundMusic";
+import img1 from "../assets/images/logo_new.png";
 import ExitModal from "./ExitModal";
+import backgroundMusic from "../assets/audio/BgMusic.mp3";
+import ClaimButtons from "./ClaimButtons";
+
+import {
+  claimFastestFive,
+  claimFirstRow,
+  claimMiddleRow,
+  claimLastRow,
+  claimFullHouse,
+  claimMiddle,
+  claimDiagonalCorners,
+} from "../utils/ClaimLogic.js";
+
+import { visualizeTickets } from "../utils/VisualizeTicket";
 
 const { FETCH_URL } = require("../constant");
 
@@ -23,19 +37,31 @@ const GamePlay = ({ socket }) => {
   const [generatedNumbers, setGeneratedNumbers] = useState([]);
   const [randomNumber, setRandomNumber] = useState(null);
   const [showNumberDropDown, setShowNumberDropDown] = useState(false);
-  const [strikedNumbers, setStrikedNumbers] = useState([]);
-  const [points, setPoints] = useState({});
   const [userData, setUserData] = useState([]);
   const [fastfive, setFastFive] = useState(false);
   const [firstRow, setFirstRow] = useState(false);
   const [fullHouse, setFullHouse] = useState(false);
-  const [winner, setWinner] = useState(null);
+  const [middleRow, setMiddleRow] = useState(false);
+  const [lastRow, setLastRow] = useState(false);
+  const [middleCell, setMiddleCell] = useState(false);
+  const [diagonalCorners, setDiagonalCorners] = useState(false);
+
+  const { strikedNumbers, setStrikedNumbers } = useContext(UserContext);
+  const { disabledNumbers, setDisabledNumbers } = useContext(UserContext);
 
   const [hideValue, setHideValue] = useState(false);
   const [claimsMade, setClaimsMade] = useState(0);
   const [displayWinner, setDisplayWinner] = useState(false);
   const [paused, setPaused] = useState(true);
   const [joiningCode, setJoiningCode] = useState("");
+
+  const [clickCounts, setClickCounts] = useState({});
+  const [misClickCounts, setMisClickCounts] = useState({});
+
+  const [gameData, setGameData] = useState({
+    winner: null,
+    topPlayers: [],
+  });
 
   // Hide Passed value button from host
   useEffect(() => {
@@ -50,14 +76,14 @@ const GamePlay = ({ socket }) => {
 
   // Delay in Display winner
   useEffect(() => {
-    if (winner) {
+    if (gameData.winner) {
       const timeoutId = setTimeout(() => {
         setDisplayWinner(true);
       }, 3000);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [winner]);
+  }, [gameData.winner]);
 
   // Confirm leaving
   useEffect(() => {
@@ -88,21 +114,21 @@ const GamePlay = ({ socket }) => {
         console.error("Error fetching random tickets:", e);
       }
     };
-  
+
     if (!tickets || Object.keys(tickets).length === 0) {
       fetchRandomTickets();
     }
-  }, [tickets]); 
-  
+  }, [tickets]);
 
   useEffect(() => {
     const handleUpdateTicket = async () => {
-      if (tickets.id &&joiningCode) {
+      if (tickets.id && joiningCode) {
         try {
           const currentSocketId = socket.id;
 
           await axios.put(`${BASE_URL}/update-ticket`, {
             id: tickets.id,
+            joiningCode: joiningCode,
             socketId: currentSocketId,
           });
         } catch (err) {
@@ -111,21 +137,11 @@ const GamePlay = ({ socket }) => {
       }
     };
 
-    const timer = setTimeout(() => {
-      handleUpdateTicket();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [tickets.id, socket.id,joiningCode]);
-
-  
-  
-  
+    handleUpdateTicket();
+  }, [tickets.id, socket.id, joiningCode]);
 
   // Winning logic and getting username and points
   useEffect(() => {
-    
-
     // if host disconnected we redirecting
     const handleHostDisconnected = () => {
       toast.info("Host has disconnected. Redirecting to home page...");
@@ -145,8 +161,6 @@ const GamePlay = ({ socket }) => {
       setPaused(pausedCheck);
     });
 
-
-
     // get random number
     socket.on("randomNumber", (randomNumber) => {
       setRandomNumber(randomNumber);
@@ -163,55 +177,69 @@ const GamePlay = ({ socket }) => {
     // After emit Fastfive Claim we get the data from server.js
     socket.on("uniqueFastFive", () => {
       setFastFive(true);
-      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
+      setClaimsMade((prevClaims) => prevClaims + 1);
     });
 
     // After emit FirstRow Claim we get the data from server.js
 
     socket.on("uniqueFirstRow", () => {
       setFirstRow(true);
-      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
-
+      setClaimsMade((prevClaims) => prevClaims + 1);
     });
 
     // After emit FullHouse Claim we get the data from server.js
     socket.on("uniqueFullHouse", () => {
       setFullHouse(true);
-      setClaimsMade((prevClaims) => prevClaims + 1); // Use an arrow function to correctly update the state
+      setClaimsMade((prevClaims) => prevClaims + 1);
+    });
 
+    //
+    socket.on("uniqueMiddleRow", () => {
+      setMiddleRow(true);
+      setClaimsMade((prevClaims) => prevClaims + 1);
+    });
+    socket.on("uniqueLastRow", () => {
+      setLastRow(true);
+      setClaimsMade((prevClaims) => prevClaims + 1);
+    });
+    socket.on("uniqueMiddleClaim", () => {
+      setMiddleCell(true);
+      setClaimsMade((prevClaims) => prevClaims + 1);
+    });
+    socket.on("uniqueDiagonalCornersClaim", () => {
+      setDiagonalCorners(true);
+      setClaimsMade((prevClaims) => prevClaims + 1);
+    });
+    socket.on("decalreWinnerByHostToPlayer", () => {
+      setClaimsMade(7);
     });
 
     // after 90 number got created we are calling calculateWinner
     socket.on("GenerateWinLogic", () => {
       // calculateWinner();
       // after 90 num generation automatically winner will be declared even not fully calimed
-      socket.emit("winner", winner);
+      socket.emit("winner", gameData.winner);
     });
 
-    socket.on("pointsUpdated", ({ name, point }) => {
-      updatePoints(name, point);
-    });
-    socket.emit("userData2Host",userData)
-
-
-
+    socket.emit("userData2Host", userData);
 
     return () => {
       socket.off("randomNumber");
-      socket.off("joinUserName");
       socket.off("uniqueFastFive");
       socket.off("uniqueFirstRow");
       socket.off("uniqueFullHouse");
-      socket.off("pointsUpdated");
-      socket.off("dataEntered");
-      socket.off("JoinCode");
-      socket.off("PausedOrNot")
-      socket.off("getPausedValue")
+      socket.off("uniqueMiddleRow");
+      socket.off("uniqueLastRow");
+      socket.off("uniqueMiddleClaim");
+      socket.off("uniqueDiagonalCornersClaim");
+      socket.off("decalreWinnerByHostToPlayer");
+      socket.off("PausedOrNot");
+      socket.off("getPausedValue");
       // if host disconnected we are calling handleHostDisconnected
       socket.off("hostDisconnected", handleHostDisconnected);
     };
     // eslint-disable-next-line
-  }, [socket, points, claimsMade, winner]);
+  }, [socket, claimsMade]);
 
   if (!joiningCode) {
     socket.emit("dataEntered");
@@ -224,97 +252,135 @@ const GamePlay = ({ socket }) => {
   });
 
   useEffect(() => {
-    if (joiningCode) { 
+    if (joiningCode) {
       axios
         .get(`${BASE_URL}/claim-data/${joiningCode}`)
         .then((response) => {
           setUserData(response.data);
         })
         .catch((e) => {
-          console.error('Error fetching claim data:', e);
+          console.error("Error fetching claim data:", e);
         });
     }
-  }, [fastfive, firstRow, fullHouse, joiningCode]);
-  
+  }, [
+    fastfive,
+    firstRow,
+    fullHouse,
+    joiningCode,
+    middleCell,
+    middleRow,
+    lastRow,
+    diagonalCorners,
+  ]);
 
-  if (claimsMade === 3) {
-    setClaimsMade(-1); 
-    setTimeout(() => {
-    socket.emit("winner", winner);
+  useEffect(() => {
+    if (claimsMade === 7) {
+      // Emit winner event and fetch winner data
+      setTimeout(() => {
         axios
-            .get(`${BASE_URL}/get-winner/${joiningCode}`)
-            .then((response) => {
-                setWinner(response.data.winner);
-                console.log(response.data);
-            })
-            .catch((e) => {
-                console.error('Error fetching claim data:', e);
+          .get(`${BASE_URL}/get-winner/${joiningCode}`)
+          .then((response) => {
+            const winnerName = response.data.winner;
+            const top3Scores = response.data.top3Scores;
+            setGameData({
+              ...gameData,
+              winner: winnerName,
+              topPlayers: top3Scores,
             });
-    }, 1500); 
-}
-
-
-
-  // Fnc for Points updation
-  const updatePoints = (name, increment) => {
-    const updatedPoints = {
-      ...points,
-      [name]: (points[name] || 0) + increment,
-    };
-    setPoints(updatedPoints);
-    // Emit updated points to server
-  };
-  // finiding user name by socket>id and mapping
-  // const getUsernameBySocketId = (socketId) => {
-  //   const user = usernames.find((user) => user.socketId === socketId);
-  //   return user ? user.name : null;
-  // };
+            // Reset claimsMade
+            setClaimsMade(0);
+            socket.emit("winner", gameData.winner);
+          })
+          .catch((e) => {
+            console.error("Error fetching claim data:", e);
+          });
+      }, 700);
+    }
+  }, [claimsMade, joiningCode, socket, gameData]);
 
   // Cell click check and pusing
   const handleCellClick = (rowIndex, cellIndex) => {
     const newTickets = { ...tickets };
-    const cellNumber = newTickets.hostTicket[rowIndex][cellIndex];
+    const cellNumber = newTickets.ticket[rowIndex][cellIndex];
+
     if (cellNumber !== null && cellNumber !== undefined) {
-      if (!strikedNumbers.includes(cellNumber)) {
-        if (generatedNumbers.includes(parseInt(cellNumber, 10))) {
-          setStrikedNumbers((prevNumbers) => [...prevNumbers, cellNumber]);
+      if (
+        !strikedNumbers.includes(cellNumber) &&
+        !disabledNumbers.includes(cellNumber)
+      ) {
+        const updatedClickCounts = { ...clickCounts };
+        updatedClickCounts[cellNumber] =
+          (updatedClickCounts[cellNumber] || 0) + 1;
+        setClickCounts(updatedClickCounts);
+
+        if (
+          cellNumber !== "" &&
+          !generatedNumbers.includes(parseInt(cellNumber, 10))
+        ) {
+          const updatedMisClickCounts = { ...misClickCounts };
+          updatedMisClickCounts[cellNumber] =
+            (updatedMisClickCounts[cellNumber] || 0) + 1;
+          setMisClickCounts(updatedMisClickCounts);
+
+          if (updatedMisClickCounts[cellNumber] === 1) {
+            toast.info("Strike Only the number that is Visible in blue box");
+          } else if (updatedMisClickCounts[cellNumber] === 2) {
+            if (disabledNumbers.length === 1) {
+              toast.error("If you do again. You will be kicked out!");
+            } else {
+              toast.warn("Number Will be Disable on Next Mis-Click");
+            }
+          } else if (updatedMisClickCounts[cellNumber] === 3) {
+            if (disabledNumbers.length === 0) {
+              toast.error(`${cellNumber} will be disabled For 15 Seconds`);
+              setTimeout(() => {
+                toast.success(`${cellNumber} Enabled Again`);
+                setDisabledNumbers([]);
+              }, 15000);
+            }
+            setDisabledNumbers((prevDisabledNumbers) => [
+              ...prevDisabledNumbers,
+              cellNumber,
+            ]);
+
+            // Redirect to home page if there are two disabled numbers
+            if (disabledNumbers.length + 1 === 2) {
+              setTimeout(() => {
+                toast.error("Exiting the game...");
+              }, 2000);
+
+              // Navigate to home page after 5 seconds
+              setTimeout(() => {
+                navigate("/");
+              }, 4000);
+            }
+          }
+        } else {
+          if (cellNumber !== "") {
+            if (!strikedNumbers.includes(cellNumber)) {
+              setStrikedNumbers((prevNumbers) => [...prevNumbers, cellNumber]);
+            }
+          }
         }
       }
     }
   };
-
-  // Logic for fast five claim
-  const claimFastestFive = async () => {
-    if (!tickets.hostTicket) {
-      alert("Host ticket data is not available.");
-      return;
-    }
-    if (strikedNumbers.length >= 5) {
-      // emit the current player clicked socket id
-
-      const data = {
-        claim: "fastFive",
-        socketId: socket.id,
-        joiningCode: joiningCode,
-      };
-
-      try {
-        await axios.put(`${BASE_URL}/claim-validation`, data);
-       
-      } catch (e) {
-        console.error("Error updating ticket:", e);
-      }
-
-      socket.emit("FastFiveClaim");
-
-      toast.success("You Claimed Fast Five", {
+  const handleClaimFastestFive = async () => {
+    const message = await claimFastestFive(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
         draggable: true,
       });
     } else {
-      toast.error("Fast Five can't be claimed Now", {
+      toast.success(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
@@ -323,49 +389,22 @@ const GamePlay = ({ socket }) => {
     }
   };
 
-  // Logic for First row
-  const claimFirstRow = async () => {
-    if (!tickets.hostTicket) {
-      alert("Host ticket data is not available.");
-      return;
-    }
-
-    const firstRow = tickets.hostTicket[0];
-    let allCellsStriked = true;
-
-    for (let i = 0; i < firstRow.length; i++) {
-      if (firstRow[i] && !strikedNumbers.includes(firstRow[i])) {
-        allCellsStriked = false;
-        break;
-      }
-    }
-
-    if (allCellsStriked) {
-      // emit the current player clicked socket id
-
-      const data = {
-        claim: "firstRow",
-        socketId: socket.id,
-        joiningCode: joiningCode,
-      };
-
-      try {
-        await axios.put(`${BASE_URL}/claim-validation`, data);
-        
-      } catch (e) {
-        console.log("Error" + e);
-      }
-
-      socket.emit("FirstRowClaim");
-
-      toast.success("You Claimed First Row", {
+  const handleClaimFirstRow = async () => {
+    const message = await claimFirstRow(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
         draggable: true,
       });
     } else {
-      toast.error("First Row can't be claimed Now", {
+      toast.success(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
@@ -374,50 +413,22 @@ const GamePlay = ({ socket }) => {
     }
   };
 
-  // Logic for Full house
-  const claimFullHouse = async () => {
-    if (!tickets.hostTicket) {
-      alert("Host ticket data is not available.");
-      return;
-    }
-
-    const allNumbers = tickets.hostTicket.flat();
-    let allNumbersStriked = true;
-
-    for (let i = 0; i < allNumbers.length; i++) {
-      if (allNumbers[i] && !strikedNumbers.includes(allNumbers[i])) {
-        allNumbersStriked = false;
-        break;
-      }
-    }
-
-    if (allNumbersStriked) {
-      // emit the current player clicked socket id
-
-
-      const data = {
-        claim: "fullHouse",
-        socketId: socket.id,
-        joiningCode: joiningCode,
-      };
-
-      try {
-        await axios.put(`${BASE_URL}/claim-validation`, data);
-      
-      } catch (e) {
-        console.log("Error" + e);
-      }
-
-      socket.emit("fullHouseClaim");
-
-      toast.success("You Claimed Full House", {
+  const handleClaimFullHouse = async () => {
+    const message = await claimFullHouse(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
         draggable: true,
       });
     } else {
-      toast.error("Full House can't be claimed Now", {
+      toast.success(message, {
         position: "bottom-center",
         autoClose: 5000,
         closeOnClick: true,
@@ -426,37 +437,100 @@ const GamePlay = ({ socket }) => {
     }
   };
 
-  // Displaying tickets fnc
-  const visualizeTickets = () => {
-    if (tickets.hostTicket || tickets.guestTicket) {
-      const ticketData = tickets.hostTicket || tickets.guestTicket;
-      return (
-        <div className="center-play">
-          <div className="table">
-            <table>
-              <tbody>
-                {ticketData.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
-                        className={`cell-data ${
-                          strikedNumbers.includes(cell) ? "strikethrough" : ""
-                        }`}
-                        onClick={() => handleCellClick(rowIndex, cellIndex)}
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
+  const handleClaimMiddleRow = async () => {
+    const message = await claimMiddleRow(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    } else {
+      toast.success(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
     }
-    return null;
+  };
+
+  const handleClaimLastRow = async () => {
+    const message = await claimLastRow(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    } else {
+      toast.success(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    }
+  };
+
+  const handleClaimMiddleCell = async () => {
+    const message = await claimMiddle(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    } else {
+      toast.success(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    }
+  };
+
+  const handleClaimDiagonalCorners = async () => {
+    const message = await claimDiagonalCorners(
+      socket,
+      tickets,
+      strikedNumbers,
+      joiningCode
+    );
+    if (message.includes("can't")) {
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    } else {
+      toast.success(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
+      });
+    }
   };
 
   return (
@@ -464,84 +538,87 @@ const GamePlay = ({ socket }) => {
       <div className="image__container d-flex justify-content-evenly">
         <img src={img1} className="logo" alt="Hosuie Housie" />
         <div className="host-container">
-          <p className="text-center fs-4">{randomNumber}</p>
+          <p className="text-center fs-3">{randomNumber}</p>
         </div>
       </div>
 
-      {userData && userData.length > 0 && (
-  <div>
-    <h2 className="mx-3">Claims:</h2>
-    <div className="claims">
-      {userData.map((user, index) => (
-        <div key={index}>
-          {user.claims.fastFive && (
-            <p>
-              <span>{user.name}</span> claimed Fastest Five! +5
-            </p>
-          )}
-          {user.claims.firstRow && (
-            <p>
-              <span>{user.name}</span> claimed First Row! +10
-            </p>
-          )}
-          {user.claims.fullHouse && (
-            <p>
-              <span>{user.name}</span> claimed Full House! +15
-            </p>
-          )}
+      {claimsMade > 0 && (
+        <div>
+          <h2 className="mx-3">Claims:</h2>
+          <div className="claims">
+            {userData.map((user, index) => (
+              <div key={index}>
+                {user.claims.fastFive && (
+                  <p>
+                    <span>{user.name}</span> claimed Fastest Five! +5
+                  </p>
+                )}
+                {user.claims.firstRow && (
+                  <p>
+                    <span>{user.name}</span> claimed First Row! +10
+                  </p>
+                )}
+                {user.claims.fullHouse && (
+                  <p>
+                    <span>{user.name}</span> claimed Full House! +15
+                  </p>
+                )}
+                {user.claims.middleRow && (
+                  <p>
+                    <span>{user.name}</span> claimed Middle Row! +5
+                  </p>
+                )}
+                {user.claims.lastRow && (
+                  <p>
+                    <span>{user.name}</span> claimed Last Row! +5
+                  </p>
+                )}
+                {user.claims.middle && (
+                  <p>
+                    <span>{user.name}</span> claimed Middle Cell! +5
+                  </p>
+                )}
+                {user.claims.diagonalCorners && (
+                  <p>
+                    <span>{user.name}</span> claimed Diagonal Corners! +5
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
-
+      )}
 
       <div className="container-play">
-        {error && <div>Error: {error}</div>}
+        {error && <div className="text-center">Error: {error}</div>}
         <div className="d-flex gap-2 align-items-center justify-content-center">
-          <button
-            className="btn btn-secondary text-warning mt-4"
-            onClick={claimFastestFive}
-            disabled={fastfive}
-          >
-            {fastfive && (
-              <ConfettiExplosion
-                width={window.innerWidth}
-                height={window.innerHeight}
-              />
-            )}
-            Claim for Fastest Five
-          </button>
-          <button
-            disabled={firstRow}
-            className="btn btn-secondary text-warning mt-4"
-            onClick={claimFirstRow}
-          >
-            {firstRow && (
-              <ConfettiExplosion
-                width={window.innerWidth}
-                height={window.innerHeight}
-              />
-            )}
-            Claim for First Row
-          </button>
-          <button
-            disabled={fullHouse}
-            className="btn btn-secondary text-warning mt-4"
-            onClick={claimFullHouse}
-          >
-            {fullHouse && (
-              <ConfettiExplosion
-                width={window.innerWidth}
-                height={window.innerHeight}
-              />
-            )}
-            Claim for Full House
-          </button>
+          <ClaimButtons
+            handleClaimFastestFive={handleClaimFastestFive}
+            handleClaimFirstRow={handleClaimFirstRow}
+            handleClaimMiddleRow={handleClaimMiddleRow}
+            handleClaimLastRow={handleClaimLastRow}
+            handleClaimMiddleCell={handleClaimMiddleCell}
+            handleClaimDiagonalCorners={handleClaimDiagonalCorners}
+            handleClaimFullHouse={handleClaimFullHouse}
+            fastfive={fastfive}
+            firstRow={firstRow}
+            middleRow={middleRow}
+            lastRow={lastRow}
+            middleCell={middleCell}
+            diagonalCorners={diagonalCorners}
+            fullHouse={fullHouse}
+          />
           <ExitModal />
         </div>
 
-        <div className="center-play">{visualizeTickets()}</div>
+        <div className="center-play">
+          {visualizeTickets(
+            tickets,
+            strikedNumbers,
+            disabledNumbers,
+            handleCellClick
+          )}
+        </div>
 
         <div className="text-center">
           {hideValue && (
@@ -554,7 +631,25 @@ const GamePlay = ({ socket }) => {
           )}
 
           {showNumberDropDown && (
-            <p className="text-center pb-4"> {generatedNumbers.join(", ")}</p>
+            <div className="text-center pb-4">
+              {generatedNumbers.slice(-7).map((number, index, array) => (
+                <span
+                  key={index}
+                  className={`rounded-circle mx-2 ${
+                    index === array.length - 1
+                      ? "latest-number"
+                      : "bg-success text-white"
+                  }`}
+                  style={{
+                    padding: "5px",
+                    minWidth: "30px",
+                    display: "inline-block",
+                  }}
+                >
+                  {number}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
@@ -590,8 +685,9 @@ const GamePlay = ({ socket }) => {
           </tbody>
         </table>
       </div>
+      <BackgroundMusic src={backgroundMusic} />
 
-      {winner && displayWinner && (
+      {gameData.winner && displayWinner && (
         <div className="fullscreen-overlay">
           <h1 className="greet">Thanks for playing!</h1>
           <div className="d-flex justify-content-end close-win">
@@ -617,16 +713,17 @@ const GamePlay = ({ socket }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {userData.map((user) => (
-                    <tr key={`${user.name}-${socket.id}`}>
-                      <td>{user.name}</td>
-                      <td>{user.score}</td>
+                  {/* Map through top 3 players */}
+                  {gameData.topPlayers.map((player, index) => (
+                    <tr key={`top-player-${index}`}>
+                      <td>{player.name}</td>
+                      <td>{player.score}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <h1 className="text-white my-3">
-                Winner: <span className="text-warning">{winner}</span>
+                Winner: <span className="text-warning">{gameData.winner}</span>
               </h1>
             </div>
           </div>

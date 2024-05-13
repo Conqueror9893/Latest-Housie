@@ -5,30 +5,46 @@ const Tickets = db.tickets
 
 const getTickets = async (req, res) => {
   try {
-    const hostResults = await sequelize.query("SELECT * FROM tickets ORDER BY RAND() LIMIT 1", { type: QueryTypes.SELECT });
+    const randomTicket = await sequelize.query("SELECT * FROM tickets ORDER BY RAND() LIMIT 1", { type: QueryTypes.SELECT });
 
-    if (!hostResults.length) {
+    if (!randomTicket.length) {
       return res.status(404).json({ error: "No tickets found" });
     }
 
-    const guestResults = await sequelize.query("SELECT * FROM tickets WHERE id != ? ORDER BY RAND() LIMIT 1", {
-      replacements: [hostResults[0].id],
-      type: QueryTypes.SELECT
-    });
+    const ticketId = randomTicket[0].id;
+    const ticket = mapTicketResultsToRows(randomTicket[0]);
 
-    if (!guestResults.length) {
-      return res.status(404).json({ error: "No tickets found" });
-    }
-
-    const hostTicket = mapTicketResultsToRows(hostResults[0]);
-    const guestTicket = mapTicketResultsToRows(guestResults[0]);
-
-    res.json({ hostTicket, guestTicket,id: hostResults[0].id });
+    res.json({ ticket,id: ticketId });
   } catch (error) {
     console.error("Error fetching random tickets:", error);
     res.status(500).json({ error: "Error fetching random tickets" });
   }
 };
+
+const getTicketById = async (req, res) => {
+  try {
+    const ticketId = req.params.id; // Assuming the ticket ID is passed in the URL parameters
+
+    const ticket = await sequelize.query("SELECT * FROM tickets WHERE id = ?", {
+      replacements: [ticketId],
+      type: QueryTypes.SELECT
+    });
+
+    if (!ticket.length) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticketData = mapTicketResultsToRows(ticket[0]);
+
+    res.json({ ticket: ticketData });
+  } catch (error) {
+    console.error("Error fetching ticket by ID:", error);
+    res.status(500).json({ error: "Error fetching ticket by ID" });
+  }
+};
+
+
+
 
 function mapTicketResultsToRows(row) {
   return [
@@ -192,4 +208,4 @@ async function generate100Tickets() {
 
 // generate100Tickets();
 
-module.exports = { getTickets };
+module.exports = { getTickets ,getTicketById};

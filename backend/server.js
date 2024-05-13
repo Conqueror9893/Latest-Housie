@@ -190,20 +190,28 @@ io.on("connection", (socket) => {
     io.emit("uniqueFullHouse");
   });
 
+  socket.on("MiddleRowClaim",()=>{
+    io.emit("uniqueMiddleRow");
+  })
+  socket.on("LastRowClaim",()=>{
+    io.emit("uniqueLastRow");
+  })
+  socket.on("MiddleClaim",()=>{
+    io.emit("uniqueMiddleClaim");
+  })
+  socket.on("DiagonalCornersClaim",()=>{
+    io.emit("uniqueDiagonalCornersClaim");
+  })
+  
   socket.on("updatePoints", ({ name, point }) => {
     io.emit("pointsUpdated", { name, point });
   });
 
-  socket.on("fastFiveName2Host", (data) => {
-    // sending the name of the player who claimed fastest five (to Host)
-    io.emit("NameofFastFive", data);
-  });
-  socket.on("firstRowName2Host", (data) => {
-    io.emit("NameofFirstRow", data);
-  });
-  socket.on("fullHouseName2Host", (data) => {
-    io.emit("NameofFullHouse", data);
-  });
+  socket.on("decalreWinnerByHost",()=>{
+    io.emit("decalreWinnerByHostToPlayer");
+  })
+  
+ 
 
   console.log(liveUsers);
 

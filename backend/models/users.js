@@ -3,6 +3,11 @@ module.exports = (sequelize, DataTypes) => {
     fastFive: false,
     firstRow: false,
     fullHouse: false,
+    middleRow:false,
+    lastRow : false,
+    middle :false,
+    diagonalCorners : false
+
   };
 
   const Users = sequelize.define(

@@ -21,16 +21,16 @@ const getAllUsers = async (req, res) => {
 
 const updateUserTicketIdBySocketId = async (req, res) => {
   try {
-    const { socketId, id } = req.body;
+    const { joiningCode,socketId, id } = req.body;
     console.log(socketId + " - " + id);
 
-    const user = await User.findOne({ where: { socketId } });
+    const user = await User.findOne({ where: { joiningCode, socketId } });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    await User.update({ ticket_id: id }, { where: { socketId } }); // Provide the where condition here
+    await User.update({ ticket_id: id }, { where: {joiningCode, socketId } }); 
 
     res.json({ message: "User ticket_id updated successfully" });
   } catch (error) {
@@ -43,22 +43,22 @@ const claimValidation = async (req, res) => {
   try {
     const { claim, socketId, joiningCode } = req.body; 
 
-    // Find the user by socket ID and joining code
     const user = await User.findOne({ where: { socketId, joiningcode: joiningCode } }); 
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Define the points for each claim
     const claimPoints = {
       fastFive: 5,
-      firstRow: 10,
-      fullHouse: 15
-      // Add other claims and their points as needed
+      firstRow: 15,
+      fullHouse: 25,
+      middleRow:15,
+      lastRow : 15,
+      middle : 5,
+      diagonalCorners : 10
     };
 
-    // Calculate the new score based on the claim
     const claimScore = claimPoints[claim];
     if (!claimScore) {
       return res.status(400).json({ error: 'Invalid claim' });
@@ -67,7 +67,6 @@ const claimValidation = async (req, res) => {
     const currentScore = user.score || 0;
     const updatedScore = currentScore + claimScore;
 
-    // Update the claims object
     const updatedClaims = { ...user.claims, [claim]: true };
 
     // Update the user with the new claims object and score
@@ -86,9 +85,12 @@ const claimValidation = async (req, res) => {
 const calculateScore = (claims) => {
   const claimPoints = {
     fastFive: 5,
-    firstRow: 10,
-    fullHouse: 15
-    // Add other claims and their points as needed
+    firstRow: 15,
+    fullHouse: 25,
+    middleRow:15,
+    lastRow : 15,
+    middle : 5,
+    diagonalCorners : 10
   };
 
   let score = 0;
@@ -124,7 +126,8 @@ const getClaimData = async (req, res) => {
         name: user.name, 
         score: score,
         claims: user.claims,
-        socketId : user.socketId
+        socketId : user.socketId,
+        ticket_id:user.ticket_id
       });
     }
 
@@ -147,19 +150,27 @@ const getWinner = async (req, res) => {
     }
 
     let winner = null;
-    let highestScore = -1;
+    let top3Scores = [];
 
-    // Loop through each user to find the winner
+    // Loop through each user to find the winner and calculate top 3 scores
     for (const user of users) {
       const score = calculateScore(user.claims);
-      if (score > highestScore) {
-        highestScore = score;
-        winner = user.name;
+      
+      // Update winner if the current user has the highest score
+      if (!winner || score > calculateScore(winner.claims)) {
+        winner = user;
       }
+
+      // Add the score to top3Scores
+      top3Scores.push({ name: user.name, score: score });
     }
 
-    // Respond with the winner's name
-    return res.status(200).json({ winner: winner });
+    // Sort top 3 scores by score in descending order
+    top3Scores.sort((a, b) => b.score - a.score);
+    top3Scores = top3Scores.slice(0, 3); // Get top 3 scores
+
+    // Respond with the winner and top 3 scores
+    return res.status(200).json({ winner: winner.name, top3Scores: top3Scores });
   } catch (error) {
     console.error('Error fetching winner:', error);
     return res.status(500).json({ error: 'Internal server error' });
