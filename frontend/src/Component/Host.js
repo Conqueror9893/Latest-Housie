@@ -6,6 +6,8 @@ import axios from "axios";
 import { GrContactInfo } from "react-icons/gr";
 import Modal from "react-modal";
 import { visualizeHost2PlayerTickets } from "../utils/VisualizeTicket";
+import { IoMdClose } from "react-icons/io";
+
 
 const { FETCH_URL } = require("../constant");
 Modal.setAppElement("#root");
@@ -13,8 +15,7 @@ Modal.setAppElement("#root");
 const BASE_URL = FETCH_URL;
 
 const Host = ({ socket }) => {
-  // eslint-disable-next-line
-  const [numbers, setNumbers] = useState(
+  const [numbers] = useState(
     Array.from({ length: 90 }, (_, index) => index + 1)
   );
   const [latestNumber, setLatestNumber] = useState(null);
@@ -166,8 +167,8 @@ const Host = ({ socket }) => {
       }));
     });
 
-    socket.on("DecalreWinner", (winner) => {
-      setWinner(winner);
+    socket.on("DecalreWinner", (data) => {
+      setWinner(data);
     });
 
     return () => {
@@ -304,18 +305,18 @@ const Host = ({ socket }) => {
       </div>
 
       {/* User Stats Modal */}
-      <div className="users-list">
-          <h2>Live Users:</h2>
-          <ul className="live-users">
-            {userData.map((user, index) => (
-              <li key={index}>
-                {user.name}{" "}
-                <GrContactInfo
-                  className="fs-3"
-                  onClick={() => handleContactInfoClick(user)}
-                />
-              </li>
-            ))}
+      <div className="users-list bg-body-secondary p-5 rounded-4 shadow-sm">
+        <h2>Joined Players:</h2>
+        <ol className="live-users ">
+          {userData.map((user, index) => (
+            <div key={index} className="user">
+              <li className="name fs-5">{user.name}</li>
+              <GrContactInfo
+                className="fs-3 contact-info-icon mx-2 mb-2"
+                onClick={() => handleContactInfoClick(user)}
+              />
+            </div>
+          ))}
             {showModal && selectedUser && (
               <>
                 <Modal
@@ -324,6 +325,8 @@ const Host = ({ socket }) => {
                   className="custom-modal-host"
                   overlayClassName="custom-overlay"
                 >
+                  <IoMdClose onClick={() => setShowModal(false)} className="fs-2 text-danger text-end "/> 
+
                   <div className="d-flex justify-content-evenly">
                     <h2 className="text-center ">
                       <span className="text-success text-center">
@@ -364,7 +367,6 @@ const Host = ({ socket }) => {
                                 <li
                                   className="mx-3 claim-name"
                                   key={claim}
-                                  title={claimName}
                                   data-fullname={claim}
                                 >
                                   {claimName}
@@ -378,7 +380,7 @@ const Host = ({ socket }) => {
                 </Modal>
               </>
             )}
-          </ul>
+          </ol>
 
           {winner && <h2 className="text-danger">{winner} Won the Match</h2>}
           {isWinnerDeclared && (

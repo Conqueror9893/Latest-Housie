@@ -3,7 +3,7 @@
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    margin-top: 50px; /* Adjust margin as needed */
+    margin-top: 25px; 
     
 }
 .option-container{
@@ -13,9 +13,9 @@
 }
 .host-container p {
   text-align: center;
-  background-color: #007bff; /* Background color */
-  color: #ffffff; /* Text color */
-  border-radius: 20%; /* Adjust the border-radius to control the roundness */
+  background-color: #007bff; 
+  color: #ffffff; 
+  border-radius: 20%; 
   padding: 35px
 }
 .host-container p:hover {
@@ -32,16 +32,16 @@
 } */
 
 .host-cell {
-    padding: 8px; /* Adjust padding for spacing */
-    border: 1px solid #ccc; /* Add border for cell */
+    padding: 8px; 
+    border: 1px solid #ccc; 
     text-align: center;
 }
 
 
 .host-host-table td,
 .host-host-table th {
-  border: 1px solid black; /* Add borders to cells */
-  padding: 10px; /* Add padding to cells */
+  border: 1px solid black;
+  padding: 10px; 
 }
 
 .strikethrough {
@@ -173,7 +173,7 @@
   }
   
   .claims-list li:hover::after {
-    content: attr(data-fullname); /* Show full claim name on hover */
+    content: attr(data-fullname);margin-top: 10px;
     position: absolute;
     background-color: white;
     border: 1px solid black;
@@ -223,4 +223,27 @@
 .modal-body{
   display:flex;
   flex-wrap:initial;
+}
+
+.live-users {
+  display: flex;
+  flex-direction: column;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.name {
+  margin-right: 8px;
+}
+
+.contact-info-icon {
+  cursor: pointer;
+}
+
+.contact-info-icon:hover {
+  color: blue;
 }

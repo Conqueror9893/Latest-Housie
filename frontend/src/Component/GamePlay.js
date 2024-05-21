@@ -167,12 +167,6 @@ const GamePlay = ({ socket }) => {
       setGeneratedNumbers((prevNumbers) => [...prevNumbers, randomNumber]);
     });
 
-    socket.emit("getDisplayData");
-
-    // joined user name and data is got after game starts
-    socket.on("displayUsers", (userData) => {
-      // setUsernames(userData);
-    });
 
     // After emit Fastfive Claim we get the data from server.js
     socket.on("uniqueFastFive", () => {
@@ -216,12 +210,10 @@ const GamePlay = ({ socket }) => {
 
     // after 90 number got created we are calling calculateWinner
     socket.on("GenerateWinLogic", () => {
-      // calculateWinner();
       // after 90 num generation automatically winner will be declared even not fully calimed
       socket.emit("winner", gameData.winner);
     });
 
-    socket.emit("userData2Host", userData);
 
     return () => {
       socket.off("randomNumber");

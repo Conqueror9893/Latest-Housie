@@ -7,6 +7,7 @@ import { GrContactInfo } from "react-icons/gr";
 import Modal from "react-modal";
 import { visualizeHost2PlayerTickets } from "../utils/VisualizeTicket";
 import { UserContext } from "./UserContext";
+import { IoMdClose } from "react-icons/io";
 
 const { FETCH_URL } = require("../constant");
 Modal.setAppElement("#root");
@@ -14,8 +15,7 @@ Modal.setAppElement("#root");
 const BASE_URL = FETCH_URL;
 
 const HostManual = ({ socket }) => {
-  // eslint-disable-next-line
-  const [numbers, setNumbers] = useState(
+  const [numbers] = useState(
     Array.from({ length: 90 }, (_, index) => index + 1)
   );
   const [latestNumber, setLatestNumber] = useState(null);
@@ -40,17 +40,17 @@ const HostManual = ({ socket }) => {
     fullHouse: false,
     middleRow: false,
     lastRow: false,
-    diagonalCorner:false,
-    middle:false
+    diagonalCorner: false,
+    middle: false,
   });
 
-    // Divide the numbers into groups of 10 for each row
+  // Divide the numbers into groups of 10 for each row
   const rows = [];
   for (let i = 0; i < numbers.length; i += 10) {
     rows.push(numbers.slice(i, i + 10));
   }
 
-  // Confirm Exit When Reload 
+  // Confirm Exit When Reload
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       e.preventDefault();
@@ -69,7 +69,7 @@ const HostManual = ({ socket }) => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [socket]); 
+  }, [socket]);
 
   // Fetch Ticket Based on the user selected
   useEffect(() => {
@@ -166,8 +166,8 @@ const HostManual = ({ socket }) => {
     });
 
     // after winner is declared from Gameplay that is listening from server.js
-    socket.on("DecalreWinner", (winner) => {
-      setWinner(winner);
+    socket.on("DecalreWinner", (data) => {
+      setWinner(data);
     });
 
     return () => {
@@ -181,7 +181,6 @@ const HostManual = ({ socket }) => {
       socket.off("uniqueLastRow");
       socket.off("uniqueDiagonalCornersClaim");
       socket.off("uniqueMiddleClaim");
-
     };
   }, [intervalId, socket]);
 
@@ -211,13 +210,20 @@ const HostManual = ({ socket }) => {
 
   // Checking if 5 claims was made enable the decalre winner button
   useEffect(() => {
-    const { fastfive, firstRow, fullHouse, middleRow, lastRow, middle } = bingoState;
-    const anyFiveTrue = (fastfive && firstRow && middleRow && lastRow && middle) ||
+    const {
+      fastfive,
+      firstRow,
+      fullHouse,
+      middleRow,
+      lastRow,
+      middle,
+    } = bingoState;
+    const anyFiveTrue =
+      (fastfive && firstRow && middleRow && lastRow && middle) ||
       (firstRow && middleRow && lastRow && middle && fullHouse) ||
       (fastfive && firstRow && middleRow && lastRow && fullHouse);
     setIsWinnerDeclared(anyFiveTrue);
   }, [bingoState]);
-  
 
   // Modal Open
   const handleContactInfoClick = (user) => {
@@ -245,7 +251,7 @@ const HostManual = ({ socket }) => {
     // the striked randomnumber was send to server.js
     socket.emit("manualRandom", randomNumber);
   };
-  
+
   // Decalre winner when 5 calims made
   const declareWinner = () => {
     socket.emit("decalreWinnerByHost");
@@ -253,7 +259,6 @@ const HostManual = ({ socket }) => {
 
   return (
     <>
-
       {strikedNumbers}
 
       {/* table mapping  */}
@@ -283,27 +288,33 @@ const HostManual = ({ socket }) => {
       </div>
 
       {/* User Info Stats */}
-      <div className="users-list">
-        <h2>Live Users:</h2>
-        <ul className="live-users">
+      <div className="users-list bg-body-secondary p-5 rounded-4 shadow-sm">
+        <h2>Joined Players:</h2>
+        <ol className="live-users ">
           {userData.map((user, index) => (
-            <li key={index}>
-              {user.name}{" "}
+            <div key={index} className="user">
+              <li className="name fs-5">{user.name}</li>
               <GrContactInfo
-                className="fs-3"
+                className="fs-3 contact-info-icon mx-2 mb-2"
                 onClick={() => handleContactInfoClick(user)}
               />
-            </li>
+            </div>
           ))}
+
           {showModal && selectedUser && (
             <>
+            
               <Modal
                 isOpen={showModal}
-                onRequestClose={() => setShowModal(false)}
+                onRequestClose={() => setShowModal(true)}
                 className="custom-modal-host"
                 overlayClassName="custom-overlay"
               >
+  <IoMdClose onClick={() => setShowModal(false)} className="fs-2 text-danger text-end "/> 
+
+
                 <div className="d-flex justify-content-evenly">
+                
                   <h2 className="text-center ">
                     <span className="text-success text-center">
                       {selectedUser.name}'s
@@ -316,6 +327,7 @@ const HostManual = ({ socket }) => {
                       {selectedUser.score}
                     </span>
                   </p>
+                  
                 </div>
                 <div>
                   {visualizeHost2PlayerTickets(
@@ -341,7 +353,6 @@ const HostManual = ({ socket }) => {
                               <li
                                 className="mx-3 claim-name"
                                 key={claim}
-                                title={claimName}
                                 data-fullname={claim}
                               >
                                 {claimName}
@@ -352,10 +363,11 @@ const HostManual = ({ socket }) => {
                       )}
                   </ul>
                 </div>
+                
               </Modal>
             </>
           )}
-        </ul>
+        </ol>
 
         {winner && <h2 className="text-danger">{winner} Won the Match</h2>}
         {isWinnerDeclared && (

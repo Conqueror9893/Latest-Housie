@@ -14,8 +14,7 @@ const BASE_URL = FETCH_URL;
 const GameCreation = ({ socket }) => {
   const [invitationData, setInvitationData] = useState(null);
   const [error, setError] = useState(null);
-  // eslint-disable-next-line
-  const { liveUsers, setLiveUsers } = useContext(UserContext);
+  const {  setLiveUsers } = useContext(UserContext);
   const [usernames, setUsernames] = useState([]);
   const [hostId, setHostId] = useState("");
 
@@ -168,12 +167,12 @@ const GameCreation = ({ socket }) => {
                 <h3 className="text-center mb-3">Joined Users:</h3>
                 <ul className="mb-2 text-center my-3">
                   <li className="text-center text-danger">
-                    {hostId && ` (Host)  ${hostId}`}
+                    {hostId && ` Host `}
                   </li>
 
                   {usernames.map((user, index) => (
                     <li className="text-center text-success" key={index}>
-                      {`${user.name} - ${user.socketId}`}
+                      {`${user.name}`}
                     </li>
                   ))}
                 </ul>
@@ -188,19 +187,19 @@ const GameCreation = ({ socket }) => {
                 >
                   {invitationData?.joiningCode} <FaRegCopy />
                 </p>
-                <div className="d-flex justify-content-center my-4">
+                <div className="d-flex justify-content-center my-4 buttons">
                   {usernames.length > 0 ? (
                     <>
                       <Link
                         to={"/host-page"}
-                        className="btn btn-success"
+                        className="btn btn-success game-start"
                         onClick={() => handleStartGame()}
                       >
                         Start Game with auto numbers generation
                       </Link>
                       <Link
                         to={"/host-manual"}
-                        className="btn btn-danger ms-2"
+                        className="btn btn-danger ms-2 game-start"
                         onClick={() => handleStartGame()}
                       >
                         Start Game with Manual Selection

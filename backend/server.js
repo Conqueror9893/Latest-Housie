@@ -33,7 +33,6 @@ app.use("/", router);
 app.get("/", (req, res) => {
   res.send("<h1>Hi</h1>");
 });
-
 //
 
 let liveUsers = [];
@@ -155,10 +154,6 @@ io.on("connection", (socket) => {
     io.emit("displayUsers", allUsernames);
   });
 
-  socket.on("userData2Host", (userData) => {
-    io.emit("ClaimData", userData);
-  });
-
   //emit comes from Game Creation this will listen from the game creation
   socket.on("joinGameData", (usernames) => {
     const uniqueSocketIds = new Set(allUsernames.map((user) => user.socketId));
@@ -175,9 +170,9 @@ io.on("connection", (socket) => {
   });
 
   // we are getting this from gameplay and sending to every user who is this winner
-  socket.on("winner", (winner) => {
+  socket.on("winner", (data) => {
     // for everyone winner is sended (this is for host)
-    io.emit("DecalreWinner", winner);
+    io.emit("DecalreWinner", data);
   });
 
   socket.on("FastFiveClaim", () => {
@@ -203,9 +198,6 @@ io.on("connection", (socket) => {
     io.emit("uniqueDiagonalCornersClaim");
   })
   
-  socket.on("updatePoints", ({ name, point }) => {
-    io.emit("pointsUpdated", { name, point });
-  });
 
   socket.on("decalreWinnerByHost",()=>{
     io.emit("decalreWinnerByHostToPlayer");

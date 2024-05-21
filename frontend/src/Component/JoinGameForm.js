@@ -2,19 +2,19 @@ import React, { useState, useEffect } from "react";
 import "../styles/joinGameForm.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-const { API_URL } = require("../constant");
+const { API_URL } = require("../constant"); 
 
 const JoinGameForm = ({ socket }) => {
   const [joiningCode, setJoiningCode] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(""); 
   const [waitingMessageVisible, setWaitingMessageVisible] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [usernames, setUsernames] = useState([]);
 
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
-  useEffect(() => {
+  useEffect(() => { 
     const params = new URLSearchParams(window.location.search);
     const joiningCodeParam = params.get("joiningCode");
     if (joiningCodeParam) {
@@ -43,7 +43,7 @@ const JoinGameForm = ({ socket }) => {
         socketId : socket.id
       }
 
-      await axios.post(`http://${API_URL}:3309/addUser`,data);
+      await axios.post(`http://${API_URL}:3309/addUser`,data); 
       if (response.status === 200) {
         if (joiningCode.trim() && name.trim()) {
           socket.emit("dataEntered", { joiningCode, name });
